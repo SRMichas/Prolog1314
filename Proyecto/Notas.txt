@@ -1,0 +1,2 @@
+-> Validar cuando ningun juadadro pueda hacer una jugada incial (jalar o comer carta).
+-> Terminar la estrateria de "Escalera" de la primera jugada.
