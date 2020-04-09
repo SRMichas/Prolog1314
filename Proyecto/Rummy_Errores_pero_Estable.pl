@@ -1,5 +1,4 @@
 /*algo:-write("hola").
-
 prueba :- write("huehueue").*/
 
 :- dynamic turno/1.
@@ -7,7 +6,10 @@ prueba :- write("huehueue").*/
 :- dynamic mazoJugador/2.
 :- dynamic mesaJugadas/2.
 :- dynamic bandera1raJugada/1.
+:- dynamic mesaJugada/1.
 
+
+mesaJugadas(tercias,[]).
 colores([rojo,azul,negro,verde]).
 
 jugador(j1).
@@ -16,19 +18,17 @@ jugador(j2).
 mazoJugador(j1,[]).
 mazoJugador(j2,[]).
 
-turno(0).
+turno(_).
 
 mesa([]).
-mesaJugadas(tercias,[]).
-mesaJugadas(escaleras,[]).
+mesaJugada([]).
 
 bandera1raJugada(false).
 
 empieza :-
-    reseteaJuego,
-    /*colores(ListaColores),
+    colores(ListaColores),
     generaFichas(ListaColores,MazoSC),                                   %generamos todas las fichas de colores en una sola lista
-    append(MazoSC,[[0,comodin],[0,comodin]],ListaBasica),     %agregarmos los 2 comodines
+    append(MazoSC,[[0,comodin],[0,comodin]],ListaBasica),     %agregarmos los 2 comodinesem
     %write(Revuelta).
     random_permutation(ListaBasica, Revuelta),                      %revolvemos la lista
     llenaMesa(Revuelta),                                            %ponemos la baraja sobre la mesa
@@ -40,8 +40,7 @@ empieza :-
     reparte,
     mesa(LL),
     %otroImprime(LL).
-    primeraJugada.*/
-    write("Jjjjjjjjjjjjjas").
+    primeraJugada.
 
 reparte :-
         mesa(Mazo),
@@ -57,21 +56,37 @@ reparte :-
         llenaMesa(Repartidas).
 
 
-primeraJugada :- turno(J),mazoJugador(J,_).%,ponerFichas(Mazo).
-
-%metodo que se encarga de poner las cartas de las jugadas que se puedan hacer
-ponerFichas(Mazo):- jugar1(Mazo),
-                    modificaBandera1(true),
-                    bandera1raJugada(B),
-                    write(B).
-
-ponerFichas(_):-
-                bandera1raJugada(V),V = false,nl,
-                writeln("-----Entro al segundo metodo de poner fichas------"),
-                comerFicha,pasar.
+primeraJugada :- turno(J),mazoJugador(J,Mazo),ponerFichas(Mazo).
 
 
+ponerFichas(Mazo):- jugar1(Mazo,Jugada),write(Jugada),
+                    %intermedio(Jugada),
+                    turno(J),
+                    mazoJugador(J,Cartitas),
+                        writeln("--------Cartas modificadas de "),write(J),
+                        writeln("----------"),
+                    writeln(Cartitas),
+                    modificaBandera1(true).
 
+                    %, ponerEnmesa(Jugada).
+ponerFichas(Mazo):-bandera1raJugada(V),V = false,comerFicha,pasar.
+
+modificaBandera1(V) :- retract(bandera1raJugada(_)),
+asserta(bandera1raJugada(V)).
+
+pasar:-cambiarTurno(),turno(J),mazoJugador(J,Mazo),ponerFichas(Mazo).
+
+cambiarTurno():-
+                jugador(NuevoJugador),
+                turno(JEnTurno),
+                dif(JEnTurno,NuevoJugador),
+                retract(turno(_)), assert(turno(NuevoJugador)).
+
+%ntermedio([[1,rojo],[1,negro],[1,azul],[7,azul],[7,rojo]],[[1,rojo],[1,negro],[1,azul],[7,azul],[7,rojo]],X)
+% ponerFichas([[1,rojo],[1,negro],[1,azul],[7,azul],[7,rojo]]).
+jugar1(Mazo,Res):- tercia(Mazo,Mazo,[H|_]),
+                        [N,Nombres] = H,
+                        convertir(N,Nombres,Res).
 comerFicha:-
                 turno(Jugador),
                 mazoJugador(Jugador,MazoActual),
@@ -82,52 +97,28 @@ comerFicha:-
                 assertz(mazoJugador(Jugador,MazoModificado)),
                 reescribeMesaPila(T).
 
-jugar1(Mazo):- tercia(Mazo,Mazo,[H|_]),
-                   [N,Nombres] = H,
-                   convertir(N,Nombres,Res),
-                   intermedio(Res),
-                   %agregarJugada(tercias,Res),
-                   quitaEImprime(Res).
-cambiarTurno:-
-                jugador(NuevoJugador),
-                turno(JEnTurno),
-                dif(JEnTurno,NuevoJugador),
-                retract(turno(_)), assertz(turno(NuevoJugador)),
-                writeln("Jugador actual en turno: "),writeln(JEnTurno),
-                writeln("Cambio de turno al Jugador: "),writeln(NuevoJugador).
+reescribeMesaPila(NuevaMesa):-
+            retractall(mesa(_)),
+            assertz(mesa(NuevaMesa)).
 
-modificaBandera1(V) :- retract(bandera1raJugada(_)),
-                       asserta(bandera1raJugada(V)).
-reseteaJuego :-
-                modificaBandera1(false),
-                retract(turno(0)),
-                retractall(mazoJugador(j1,_)),
-                retractall(mazoJugador(j2,_)),
-                retractall(mesa(_)),
-                retractall(mesaJugada(tercias,[])),
-                retractall(mesaJugada(escaleras,[])). 
-quitaEImprime(Jugada):-
-        writeln("JUGADA  -- - - "+Jugada),
-        turno(J),
-        mazoJugador(J,Cartitas),nl,
-        write("--------Cartas modificadas de "),
-        write(J),
-        writeln(" ----------"),nl,
-        writeln(Cartitas).
 
-agregarJugada(TipoJugada,Jugada):- mesaJugadas(TipoJugada,TempJugada),
-                                   append(TempJugada,[Jugada],RespJugada),
-                                   retractall(mesaJugadas(TipoJugada,_)),
-                                   assertz(mesaJugadas(TipoJugada,RespJugada)).
+% R1 , R2 ,
+% [1,rojo],[1,azul],[1,verde]
+%regla([Numero,Color],[Cabeza|Cola]):- ,Color =,Cabeza /= [Numero,Color],regla([Numero,Color],Cola).
+% [[1,rojo],[1,rojo],[1,azul],[1,verde]]
+% 1 = [rojo,rojo,azul,verde]
+% [[1,rojo],[1,azul],[1,verde]]
+%
+% ponerFichas([H|T]):-verificarCorrida().
 
-pasar:-cambiarTurno,turno(J),mazoJugador(J,Mazo),ponerFichas(Mazo).
 
-intermedio(Jugada):-
-        turno(J),
-        mazoJugador(J,ManoActual),
-        borraMaz(Jugada,ManoActual,ManoModificada),
-        retractall(mazoJugador(J,_)),
-        assertz(mazoJugador(J,ManoModificada)).
+% verificarTercia(Ficha,Rsp):-
+        /*tiene que ser igual el numero,comparado con
+        la ultima que pusimos, y que sea de diferente color.
+        Ficha = [Numero,Color]
+        Respuesta = [H|T]
+        */
+        %,cuentaCartas(Ficha,)
 
 quitaCartas(L1,L2,R) :-
         borrar(L1,L2,R).
@@ -135,7 +126,10 @@ quitaCartas(L1,L2,R) :-
 borrar([],X,X).
 borrar([_|T],[_|Xs],R) :- borrar(T,Xs,R).
 
-
+/*      H|T
+borraMaz([[1,rojo],[1,verde]],[[2,azul],[1,rojo],[4,negro],[1,verde],[10,negro]],X)
+borraMaz([[1,verde],[1,rojo],[1,azul],[1,verde],[1,rojo],[1,azul],[7,rojo],[7,rojo]],X)
+*/
 borraMaz([],Lista,Lista).
 borraMaz([HJ|TJ],ListaMano,MazJugador):-
          remover(HJ,ListaMano,ListaSin),
@@ -143,7 +137,18 @@ borraMaz([HJ|TJ],ListaMano,MazJugador):-
 
 % mano
 mazoJugador(jp,[[1,verde],[1,rojo],[1,azul],[7,rojo],[7,rojo]]).
+intermedio(Jugada):-
+        turno(J),
+        mazoJugador(J,ManoActual),
+        borraMaz(Jugada,ManoActual,ManoModificada),
+        retractall(mazoJugador(J,_)),
+        assertz(mazoJugador(J,ManoModificada)),
+        agregarJugada(tercias,Jugada).
 
+agregarJugada(TipoJugada,Jugada):- mesaJugadas(TipoJugada,TempJugada),
+                                   append(TempJugada,[Jugada],RespJugada),
+                                   retractall(mesaJugadas(TipoJugada,_)),
+                                   assertz(mesaJugadas(TipoJugada,RespJugada)).
 
 % Remover un objeto de una lista
 % remover(+Elemento,+Lista, ?Resultado).
@@ -155,14 +160,17 @@ remover(Elemento,Lista):-
     remover(Elemento,Lista,Resultado),  %Remueve dicho elemento de la lista
     reescribeMesa(Resultado).
 
-
+/*
+jugada(tercia,[[[1,rojo],[1,negro],[1,azul]]]).
+jugada(escalera,[[11,rojo],[12,rojo],[13,rojo]]).
+*/
 
 % [[1,rojo],[1,negro],[1,azul]]
 agregaMazo(Jugador,Cartas) :-
         retractall(mazoJugador(Jugador,_)),
         assertz(mazoJugador(Jugador,Cartas)).
 
-revisaEmpieza([Carta1,Carta2|_]) :-         %en caso de que el J1 sea el que gane
+revisaEmpieza([Carta1,Carta2|_]) :-   %en caso de que el J1 sea el que gane
             [Num1,_] = Carta1,
             [Num2,_] = Carta2,
             Num1 > Num2,
@@ -188,13 +196,9 @@ llenaMesa(X) :-
         assertz(mesa(X)).
 
 %Ponemos las cartas jugadas
-reescribeMesa(TipoJugada,NuevaMesa):-
-        retractall(mesaJugada(_,_)),
-        assertz(mesaJugada(TpoJugada,NuevaMesa)).
-
-reescribeMesaPila(NuevaMesa):-
-        retractall(mesa(_)),
-        assertz(mesa(NuevaMesa)).
+reescribeMesa(NuevaMesa):-
+        retractall(mesaJugada(_)),
+        assertz(mesaJugada(NuevaMesa)).
 
 cambiaTurno(X) :-
         retract(turno(_)),
@@ -273,3 +277,8 @@ dameCartasRepetidas(Carta,[Mazo1|Mazo2],T) :-
     not(Num =:= Num1),
     dameCartasRepetidas(Carta,Mazo2,T).
 
+/*intermedio(L1,L2,R) :-
+        tercia(L1,L2,[H|T]),
+        [N,Nombres] = H,
+        convertir(N,Nombres,R).
+*/
