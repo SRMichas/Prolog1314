@@ -1,15 +1,10 @@
-/*algo:-write("hola").
-prueba :- write("huehueue").
-[[5,negro],[1,rojo],[12,rojo],[3,rojo],[4,verde]]
-*/
-%empieza.
-
 :- dynamic turno/1.
 :- dynamic mesa/1.
 :- dynamic mazoJugador/2.
 :- dynamic mesaJugadas/2.
 :- dynamic bandera1raJugada/1.
 :- dynamic mesaJugada/1.
+:- dynamic contador/1.
 
 
 mesaJugadas(tercias,[]).
@@ -25,7 +20,7 @@ mazoJugador(j2,[[11,azul],[2,rojo],[11,negro],[11,verde]]).*/
 mazoJugador(j1,[[1,azul],[2,rojo],[1,negro],[1,verde]]).
 mazoJugador(j2,[[11,azul],[2,rojo],[11,negro],[11,verde]]).
 
-%mazoJugador(jp,[[1,verde],[1,rojo],[1,azul],[7,rojo],[7,rojo]]).
+mazoJugador(jp,[[1,verde],[1,rojo],[1,azul],[7,rojo],[7,rojo]]).
 
 turno(_).
 
@@ -33,41 +28,73 @@ mesa([]).
 mesaJugada([]).
 
 bandera1raJugada(false).
+contador(0).
 
 empieza :-
-        reseteaJuego,
-        colores(ListaColores),
-        generaFichas(ListaColores,MazoSC),                      % generamos todas las fichas de colores en una sola lista
-        append(MazoSC,[[0,comodin],[0,comodin]],ListaBasica),   % agregarmos los 2 comodinesem
-        %write(Revuelta).
-        random_permutation(ListaBasica, Revuelta),              % revolvemos la lista
-        llenaMesa(Revuelta),                                    % ponemos la baraja sobre la mesa
-        revisaEmpieza2(Revuelta),                               % verificamos quien empieza
-        random_permutation(Revuelta, RevueltaFinal),            % revolvemos nuevamente
-        llenaMesa(RevueltaFinal),                               % volvemos a poner la baraja sobre la mesa
-        %otroImprime(RevueltaFinal),
-        writeln("\n\n"),
-        reparte,                                                % repartimos las cartas a los jugadores
-        /*mesa(LL),
-        otroImprime(LL).*/
-        primeraJugada.
-        %retract(turno(_)).
+    reseteaJuego,
+    colores(ListaColores),
+    generaFichas(ListaColores,MazoSC),                               %generamos todas las fichas de colores en una sola lista
+    append(MazoSC,[[0,comodin],[0,comodin]],ListaBasica),            %agregarmos los 2 comodinesem
+    random_permutation(ListaBasica, Revuelta),                      %revolvemos la lista
+    llenaMesa(Revuelta),                                            %ponemos la baraja sobre la mesa
+    revisaEmpieza2(Revuelta),                                        %verificamos quien empieza
+    random_permutation(Revuelta, RevueltaFinal),                    %revolvemos nuevamente
+    llenaMesa(RevueltaFinal),                                       %volvemos a poner la baraja sobre la mesa
+    writeln("\n\n"),
+    reparte,
+    primeraJugada,
+    juegoNormal.
+    
 
 reparte :-
-        mesa(Mazo),                                                     
-        sublista(Mazo,14,ListaJ1), agregaMazo(j1,ListaJ1),              % tomamos las primeras 14 cartas del maso
-        quitaCartas(ListaJ1,Mazo,SemiRepartida),                        % actualizamos el maso
+        mesa(Mazo),
+        sublista(Mazo,14,ListaJ1), agregaMazo(j1,ListaJ1),
+        quitaCartas(ListaJ1,Mazo,SemiRepartida),
         write("----------MAZO JUGADOR-------------- "),write("j1 \n"),
         otroImprime(ListaJ1),
-        sublista(SemiRepartida,14,ListaJ2), agregaMazo(j2,ListaJ2),     % tomamos las primeras 14 cartas del maso
-        quitaCartas(ListaJ2,SemiRepartida,Repartidas),                  % actualizamos el maso
+        sublista(SemiRepartida,14,ListaJ2), agregaMazo(j2,ListaJ2),
+        quitaCartas(ListaJ2,SemiRepartida,Repartidas),
         write("----------MAZO JUGADOR-------------- "),write("j2 \n"),
         otroImprime(ListaJ2),       %irrelabante solo con fines de mostrar
         write("\n"),                %irrebalante solo con fines de mostrar
-        llenaMesa(Repartidas).                                          % ponemos las cartas sobrantes en la mesa
+        llenaMesa(Repartidas).
 
 
-primeraJugada :- turno(J),mazoJugador(J,Mazo), ponerFichas2(Mazo).
+primeraJugada :- turno(J),mazoJugador(J,Mazo),
+                 ponerFichas2(Mazo),cambiarTurno.
+
+juegoNormal:- turno(J),
+        %       J = jp,  
+              mazoJugador(J,Mazo),write(Mazo),
+              write("Que ficha quieres pones -->[[Ficha],[FIcha]. . .[Ficha]] --> "),read(FichasElegidas),
+              checarInt(FichasElegidas,Mazo)->
+                        proc(FichasElegidas);
+                        write("NO se puede morro(a), checa la baraja que pusiste!!!!"),
+                        juegoNormal.
+/*
+si , las fichas elegidas, encajan en una jugada existente.
+*/
+
+
+
+pertenece(E,[E|_]).
+pertenece(E,[_|T]):- pertenece(E,T).
+
+checarInt([],_).
+checarInt([H|T],Mazo):-
+                pertenece(H,Mazo), %[1,negro] -->
+                checarInt(T,Mazo).
+
+
+
+proc(Lista):-   length(Lista,L),L>=3,jugar1(Lista,Rsp,TipoJ),
+                write("Jugada Valida ---> "),write(Rsp),
+                write(" y fue una : "),write(TipoJ),
+                agregarJugada(TipoJ,Rsp).
+
+proc(Lista) :- length(Lista,L),L>0,L<3,write("Fichas ->"),write(Lista).
+                
+
 
 reseteaJuego :-
         modificaBandera1(false),
@@ -78,21 +105,14 @@ reseteaJuego :-
         retractall(mesaJugadas(tercias,_)),assertz(mesaJugadas(tercias,[])),
         retractall(mesaJugadas(escaleras,_)),assertz(mesaJugadas(escaleras,[])). 
 
-ifChido(Mazo) :-
-        (
-                Mazo =:= 1 -> write("este es un UNO");
-                Mazo =:= 2 -> write("este es un DOS");
-                write("este NO se que nuemro es")
-        ).
-
 %==============================================================================================================================
 ponerFichas2(Mazo) :-
         jugar1(Mazo,Jugada,TipoJugada) ->
                                 turno(J),
-                                intermedio(Jugada),                     % elimina las cartas de la jugada del mazo del jugador en turno
-                                agregarJugada(TipoJugada,Jugada),       
-                                mazoJugador(J,Cartitas),                
-                                modificaBandera1(true),                 % bandera de control para que no se cuatrapee
+                                intermedio(Jugada),            % elimina las cartas de la jugada del mazo del jugador en turno
+                                agregarJugada(TipoJugada,Jugada),        
+                                mazoJugador(J,Cartitas),
+                                modificaBandera1(true),
                                 write("==================================================================[ "),
                                 print(J),
                                 write(" ]=================================================================="),
@@ -101,60 +121,35 @@ ponerFichas2(Mazo) :-
                                 write("--------Cartas modificadas de "),write(J),
                                 write("----------"),nl,
                                 write(Cartitas),nl;
-        %bandera1raJugada(V),V = false,
                                 comerFicha, pasar.
-
-
 %==============================================================================================================================
 
 
 modificaBandera1(V) :- retract(bandera1raJugada(_)), asserta(bandera1raJugada(V)).
 
 pasar:- cambiarTurno, primeraJugada.
+                %turno(J),mazoJugador(J,Mazo),
 
 cambiarTurno:-
                 jugador(NuevoJugador),
                 turno(JEnTurno),
-                bandera1raJugada(B), B == false,        % bandera de control para que no se cuatrapee
+                bandera1raJugada(B), B == false,
                 NuevoJugador \= JEnTurno,
                 retract(turno(_)), assert(turno(NuevoJugador)).
 
-jugar1(Mazo,Res,TipoJugada):- 
-                        tercia(Mazo,Mazo,[H|_]),
-                        [Numero,Colores] = H,
-                        convertir(Numero,Colores,Res),nl,   % convertimos a cartas
+jugar1(Mazo,Res,TipoJugada):- tercia(Mazo,Mazo,[H|_]),
+                        [N,Nombres] = H,
+                        convertir(N,Nombres,Res),nl,
                         TipoJugada = tercias.
 
-jugar1(Mazo,Res,TipoJugada):- 
-                        escalera(Mazo,Mazo,[H|_]),
-                        write("Entro T u Sde"),
+jugar1(Mazo,Res,TipoJugada):- escalera(Mazo,Mazo,[H|_]),
+                        %write("Entro T u Sde"),
                         [Color,Numeros] = H,
                         write(Numeros),
                         intermedioE(Numeros,Resp),
-                        convertir(Color,Resp,Res),nl,   % convertimos a cartas
+                        convertir(Color,Resp,Res),nl,
                         TipoJugada = escaleras.
-                        
-validaEscalera([X],ListaA,ListaRsp):- append(ListaA,[X],ListaRsp).
-validaEscalera([Actual,SigN|T],ListaA,Rsp) :- 
-    Actual =:= SigN-1,
-    append(ListaA,[Actual],ListaAU),
-    append([SigN],T,Lista),
-    validaEscalera(Lista,ListaAU,Rsp).
-validaEscalera([Actual,SigN|_],ListaA,Rsp) :-
-    not(Actual =:= SigN-1),
-    append(ListaA,[Actual],Rsp).
-
-intermedioE([],Res).
-intermedioE([H,J|T],Res):-
-    validaEscalera([H,J|T],[],Res),
-    length(Res,L),
-    L >= 3.
-
-intermedioE([_,J|T],Res):-
-    append([J],T,ListaCon),
-    intermedioE(ListaCon,Res).
-                
-                
+                                        
 comerFicha:-
                 turno(Jugador),
                 mazoJugador(Jugador,MazoActual),
@@ -178,7 +173,6 @@ quitaCartas(L1,L2,R) :-
 borrar([],X,X).
 borrar([_|T],[_|Xs],R) :- borrar(T,Xs,R).
 
-
 borraMaz([],Lista,Lista).
 borraMaz([HJ|TJ],ListaMano,MazJugador):-
          remover(HJ,ListaMano,ListaSin),
@@ -196,8 +190,6 @@ remover2(A,[B|X],[H|Y]) :-
         dif(A,B),
         H = B,
         remover2(A,X,Y).
-% mano
-
 
 intermedio(Jugada):-
         turno(J),
@@ -222,34 +214,6 @@ remover(Elemento,Lista):-
 agregaMazo(Jugador,Cartas) :-
         retractall(mazoJugador(Jugador,_)),
         assertz(mazoJugador(Jugador,Cartas)).
-
-revisaEmpieza([Carta1,Carta2|_]) :-   %en caso de que el J1 sea el que gane
-            [Num1,_] = Carta1,
-            [Num2,_] = Carta2,
-            Num1 > Num2,
-            cambiaTurno(j1),
-            write(j1),writeln(" tu empiezas").
-
-revisaEmpieza([Carta1,Carta2|_]) :-         %en caso de que el J2 sea el que gane
-           [Num1,_] = Carta1,
-           [Num2,_] = Carta2,
-           Num1 < Num2,
-           cambiaTurno(j2),
-           write(j2),writeln(" tu empiezas").
-
-revisaEmpieza([Carta1,Carta2|T]) :-         %en caso de que sean iguales, volvemos a tirar
-            [Num1,_] = Carta1,
-            [Num2,_] = Carta2,
-            Num1 =:= Num2,
-            revisaEmpieza(T).
-revisaEmpieza2([Carta1,Carta2|T]) :-
-                [Num1,_] = Carta1,
-                [Num2,_] = Carta2,
-                (
-                  Num1 > Num2 -> cambiaTurno(j1), write(j1), writeln(" tu empiezas");
-                  Num1 < Num2 -> cambiaTurno(j2), write(j2), writeln(" tu empiezas");
-                  revisaEmpieza2(T)
-                ).
 
 %Llenar el mazo que hay sobre de la mesa para poder jalar
 llenaMesa(X) :-
@@ -286,17 +250,35 @@ sublista([H|T],N,[H|RT]) :-     %
         Naux is N - 1,          %
         sublista(T,Naux,RT).    
 
-
 imprime :-
        fichasXcolor(rojo,13,X),
        otroImprime(X).
-%------Nueva Seccion 07/04/2020 Martes ?Intento Tercia?---------------------------------------------------------------------------
 
 unicos(Lin, Lout) :-    unicos(Lin, [], Lout).
 unicos([], ACC, OUT) :- reverse(ACC, OUT).
 unicos([X|Z], ACC, OUT) :- member(X, ACC),!,unicos(Z, ACC, OUT).
 unicos([X|Z], ACC, OUT) :- unicos(Z, [X|ACC], OUT).
 
+
+convertir(Numero,[],[]).
+convertir(Numero,[CH1|CT1],[RH2|RT2]):- 
+                    number(Numero),
+                    RH2 = [Numero,CH1],
+                    convertir(Numero,CT1,RT2).
+convertir(Color,[Numero|CT1],[RH2|RT2]):-
+                not(number(Color)),
+                RH2 = [Numero,Color],             % carta
+                convertir(Color,CT1,RT2).
+% ==============================================APARTADO PARA VER QUIEN EMPIEZA===========================
+revisaEmpieza2([Carta1,Carta2|T]) :- /*IF Revisa Empieza*/
+                [Num1,_] = Carta1,
+                [Num2,_] = Carta2,
+                (
+                  Num1 > Num2 -> cambiaTurno(j1), write(j1), writeln(" tu empiezas");
+                  Num1 < Num2 -> cambiaTurno(j2), write(j2), writeln(" tu empiezas");
+                  revisaEmpieza2(T)
+                ).
+% ==============================================APARTADO TERCIAS==========================================
 tercia([],_,[]).
 tercia([H|T],Mazo,[HR|TR]):-                    % si hay tercia en el mazo
     dameCartasSinRepetir(H,Mazo,Rspa,L),        % devuelve la tercia
@@ -316,23 +298,6 @@ dameCartasSinRepetir(Carta,Mazo,Rsp,L) :-
         length(Unicos,L),                               % obtenemos la longitud de la lista
         Rsp = [N,Unicos].
 
-/*convertir(_,[],[]).                             %convierte lista en fichas de nuevo xDDDDDDDD
-convertir(Numero,[CH1|CT1],[RH2|RT2]):-         
-                RH2 = [Numero,CH1],             % carta
-                convertir(Numero,CT1,RT2).
-     */   
-%======
-convertir(Numero,[],[]).
-convertir(Numero,[CH1|CT1],[RH2|RT2]):- 
-                    number(Numero),
-                    RH2 = [Numero,CH1],
-                    convertir(Numero,CT1,RT2).
-convertir(Color,[Numero|CT1],[RH2|RT2]):-
-                not(number(Color)),
-                RH2 = [Numero,Color],             % carta
-                convertir(Color,CT1,RT2).
-%=====
-
 dameCartasRepetidas(_,[],[]).                           
 dameCartasRepetidas(Carta,[Mazo1|Mazo2],[Col2|T]) :-    % verifica si hay cartas con el mismo nuemro
                 [Num,_] = Carta,
@@ -346,7 +311,7 @@ dameCartasRepetidas(Carta,[Mazo1|Mazo2],T) :-           % verifica si hay cartas
                 not(Num =:= Num1),                      %si son diferentes, ignoramos y avanzamos
                 dameCartasRepetidas(Carta,Mazo2,T).
 
-%------Nueva Seccion 10/04/2020 Viernes ? Intento Escalera---------------------------------------------------------------------------
+% ========================================APARTADO ESCALERA===========================
 escalera([],_,[]).
 escalera([H|T],Mazo,[HR|TR]):-
     dameCartasSinRepetirEsc(H,Mazo,Rspa,L),
@@ -358,6 +323,17 @@ escalera([H|T],Mazo,JugaSinproce):-%Mazo = [H|T],
         dameCartasSinRepetirEsc(H,Mazo,_,L),
         L < 3,
         escalera(T, Mazo, JugaSinproce).
+
+intermedioE([],Res).
+intermedioE([H,J|T],Res):-
+    validaEscalera([H,J|T],[],Res),
+    length(Res,L),
+    L >= 3.
+
+intermedioE([_,J|T],Res):-
+    append([J],T,ListaCon),
+    intermedioE(ListaCon,Res).
+                
 dameCartasSinRepetirEsc(Carta,Mazo,Rsp,L) :-
         [_,C] = Carta,
         dameCartasRepetidasEsc(Carta,Mazo,Repetidas),   %devolver la lista aunqye haya repetidos
@@ -366,6 +342,7 @@ dameCartasSinRepetirEsc(Carta,Mazo,Rsp,L) :-
         length(UnicosOrd,L),
         L>=3,
         Rsp = [C,UnicosOrd].
+
 dameCartasRepetidasEsc(_,[],[]).
 dameCartasRepetidasEsc(Carta,[Mazo1|Mazo2],[Num2|T]) :-
     [_,C] = Carta,
@@ -378,4 +355,14 @@ dameCartasRepetidasEsc(Carta,[Mazo1|Mazo2],T) :-
     [_,Col2] = Mazo1,
     not(C == Col2),
     dameCartasRepetidasEsc(Carta,Mazo2,T).
-%------Nueva Seccion 10/04/2020 Viernes ? Intento Escalera---------------------------------------------------------------------------
+
+validaEscalera([X],ListaA,ListaRsp):- append(ListaA,[X],ListaRsp).
+validaEscalera([Actual,SigN|T],ListaA,Rsp) :- 
+    Actual =:= SigN-1,
+    append(ListaA,[Actual],ListaAU),
+    append([SigN],T,Lista),
+    validaEscalera(Lista,ListaAU,Rsp).
+
+validaEscalera([Actual,SigN|_],ListaA,Rsp) :-
+    not(Actual =:= SigN-1),
+    append(ListaA,[Actual],Rsp).
