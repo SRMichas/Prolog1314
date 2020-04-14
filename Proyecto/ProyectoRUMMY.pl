@@ -42,8 +42,9 @@ empieza :-
     llenaMesa(RevueltaFinal),                                       %volvemos a poner la baraja sobre la mesa
     writeln("\n\n"),
     reparte,
-    primeraJugada,
-    juegoNormal.
+    primeraJugada,nl,
+    %write("paso lo primero"),nl,
+    miniMenu.
     
 
 reparte :-
@@ -61,21 +62,48 @@ reparte :-
 
 
 primeraJugada :- turno(J),mazoJugador(J,Mazo),
-                 ponerFichas2(Mazo),cambiarTurno.
+                 ponerFichas2(Mazo),cambiarTurnoNormal.
 
-juegoNormal:- turno(J),
-        %       J = jp,  
-              mazoJugador(J,Mazo),write(Mazo),
-              write("Que ficha quieres pones -->[[Ficha],[FIcha]. . .[Ficha]] --> "),read(FichasElegidas),
-              checarInt(FichasElegidas,Mazo)->
-                        proc(FichasElegidas);
-                        write("NO se puede morro(a), checa la baraja que pusiste!!!!"),
-                        juegoNormal.
+revisaEscribe :-
+        read(X),writeln(X).
+
+miniMenu :-     
+                turno(J), 
+                nl,write("Jugador en turno ~~~~ ["),write(J),write("] ~~~~"),nl,
+                mazoJugador(J,Mazo),write(Mazo),nl,nl,
+                mesaJugadas(tercias,Tercias),
+                mesaJugadas(escaleras,Escaleras),
+                write("-----Mesa de Jugadas----- "),nl,
+                write("Tercias ====>"),write(Tercias),nl,nl,
+                write("Escaleras ====>"),write(Escaleras),nl,nl,                
+                write("Que quieres hacer? {f} para poner fichas o {p} para pasar --> "),read(Opcion),
+                (
+                        Opcion == f -> juegoNormal ;
+                        Opcion == p -> pasarConComer ;
+                        write("Chamaco ingrato, haz caso a lo que se te esta pidiendo >:c .... "),nl,nl,
+                        miniMenu
+                ).
+
+juegoNormal:-   
+                turno(J),
+                mazoJugador(J,Mazo),
+                write("Que ficha quieres pones -->[[Ficha],[FIcha]. . .[Ficha]] --> "),read(FichasElegidas),
+                (checarInt(FichasElegidas,Mazo)->
+                                proc(FichasElegidas),cambiarTurnoNormal,miniMenu;
+                                write("NO se puede morro(a), checa la baraja que pusiste!!!!"),nl,
+                                miniMenu
+                ).
 /*
 si , las fichas elegidas, encajan en una jugada existente.
+caele al discord.... --> 5:00 pm
+
 */
 
+%================================================================================================================================================
 
+
+
+%================================================================================================================================================
 
 pertenece(E,[E|_]).
 pertenece(E,[_|T]):- pertenece(E,T).
@@ -85,17 +113,83 @@ checarInt([H|T],Mazo):-
                 pertenece(H,Mazo), %[1,negro] -->
                 checarInt(T,Mazo).
 
-
-
-proc(Lista):-   length(Lista,L),L>=3,jugar1(Lista,Rsp,TipoJ),
+proc(Lista):-   length(Lista,L),L>=3,jugar1(Lista,Rsp,TipoJ),intermedio(Lista),
                 write("Jugada Valida ---> "),write(Rsp),
-                write(" y fue una : "),write(TipoJ),
+                write(" y fue una : "),write(TipoJ),nl,nl,
                 agregarJugada(TipoJ,Rsp).
+%[[1,rojo],[1,rojo]]
+proc(Jugada) :- 
+        [FichaH|T] = Jugada,
+        [Numero,Color] = FichaH,
+        mesaJugadas(tercias,Tercias),
+        length(Jugada,L),L>0,L<3,write("Fichas ->"),write(Jugada),nl,nl,
+        filtroNumero(Numero,Tercias,ListaFiltrada),
+        checarColores(Color,ListaFiltrada,JugadaDefinitiva).
+% Aqui nos quedamos
 
-proc(Lista) :- length(Lista,L),L>0,L<3,write("Fichas ->"),write(Lista).
-                
+/* ?- checarColores(negro,[[[1,azul],[1,verde],[1,negro]],[[1,verde],[1,rojo],[1,azul]]],R).      
+        R = [[1, verde], [1, rojo], [1, azul]].*/
+checarColores(Color,[],_).
+checarColores(Color,[H|T],JugadaDefinitiva):-
+              getNumerosCol(H,_,ListaColores),
+              pertenece(Color,ListaColores) ->
+                        checarColores(Color,T,JugadaDefinitiva);
+                        JugadaDefinitiva = H.
 
 
+
+predicadoSoria(Ficha,[X]) :- append([X],Ficha,Resp).
+predicadoSoria([_,Color],[H|T]) :-
+                [[_,ColorC]|_] = H,
+                Color == ColorC.
+
+% ========= GETNUMEROSCOLORES ========= 
+% getNumerosCol(+ListaFichas,?ListaNumeros,?ListaColores).
+% ? getNumerosCol([[1,rojo],[3,azul],[3,rojo],[2,negro]], Num, Col).
+% ? Num = [1,3,3,2]
+% ? Col = [rojo,azul,rojo,negro]
+getNumerosCol([],[],[]).
+getNumerosCol([H|T], Numeros, Colores) :-
+    [Numero|Color] = H,
+    getNumerosCol(T,NAcumulador,CAcumulador),
+    append([Numero],NAcumulador,Numeros),
+    append(Color,CAcumulador,Colores).
+
+
+filtroNumero(_,[],[]).
+filtroNumero(Numero,[H|T],[H|TR]) :-
+        [[NumeroC,_]|_] = H,
+        Numero =:= NumeroC,
+        length(H,L),
+        L =:= 3,
+        filtroNumero(Numero,T,TR).
+filtroNumero(Numero,[H|T],Resp) :-
+        [[NumeroC,_]|_] = H,
+        not(Numero =:= NumeroC),
+        filtroNumero(Numero,T,Resp).
+
+filtroColor(_,[],[]).
+filtroColor(Color,[H|T],[H|TR]) :-
+        [[_,ColorC]|_] = H,
+        Color == ColorC,
+        filtroNumero(Numero,T,TR).
+
+filtroColor(Color,[H|T],Resp) :-
+        [[_,ColorC]|_] = H,
+        not(Color == ColorC),
+        filtroNumero(Color,T,Resp).
+
+
+
+
+               
+% Ficha Jugador --> 1ro -> Tercia ¿Cabe en alguna Jugada ? si -> acomodas
+                       %-> Escaleras -> ¿Cabe en alguna Jugada? ->Si ->Acomodas 
+                                %                                                                       No ->Se sale y le dices al jugador que no se puede 
+                                %                                                                            acoplar a nada esas fichas -> Se le da la opcion de pasar.
+% Escalera -> 1 2 3 4 5
+
+% ==========================================APARTADO DE RESETEO DE VARIABLES DEL JUEGO============================
 reseteaJuego :-
         modificaBandera1(false),
         retract(turno(_)),assert(turno(_)), %<-----------
@@ -129,6 +223,7 @@ modificaBandera1(V) :- retract(bandera1raJugada(_)), asserta(bandera1raJugada(V)
 
 pasar:- cambiarTurno, primeraJugada.
                 %turno(J),mazoJugador(J,Mazo),
+pasarConComer :- comerFicha,cambiarTurnoNormal,miniMenu.
 
 cambiarTurno:-
                 jugador(NuevoJugador),
@@ -137,9 +232,16 @@ cambiarTurno:-
                 NuevoJugador \= JEnTurno,
                 retract(turno(_)), assert(turno(NuevoJugador)).
 
+cambiarTurnoNormal:-
+        jugador(NuevoJugador),
+        turno(JEnTurno),
+        bandera1raJugada(B), B == true,
+        NuevoJugador \= JEnTurno,
+        retract(turno(_)), assert(turno(NuevoJugador)).
+
 jugar1(Mazo,Res,TipoJugada):- tercia(Mazo,Mazo,[H|_]),
                         [N,Nombres] = H,
-                        convertir(N,Nombres,Res),nl,
+                        convertir(N,Nombres,Res),nl,nl,
                         TipoJugada = tercias.
 
 jugar1(Mazo,Res,TipoJugada):- escalera(Mazo,Mazo,[H|_]),
@@ -147,7 +249,7 @@ jugar1(Mazo,Res,TipoJugada):- escalera(Mazo,Mazo,[H|_]),
                         [Color,Numeros] = H,
                         write(Numeros),
                         intermedioE(Numeros,Resp),
-                        convertir(Color,Resp,Res),nl,
+                        convertir(Color,Resp,Res),nl,nl,
                         TipoJugada = escaleras.
                                         
 comerFicha:-
@@ -155,9 +257,9 @@ comerFicha:-
                 mazoJugador(Jugador,MazoActual),
                 mesa([H|T]),
                 append(MazoActual,[H],MazoModificado),
-                write("________________________________________________"),
+                /*write("________________________________________________"),
                 write("Este mazo pertenece a [ "),write(Jugador),write(" ] y acaba de comer porque no tiene juego"),
-                write("________________________________________________"),nl,
+                write("________________________________________________"),*/nl,
                 write(MazoModificado),nl,nl,
                 retractall(mazoJugador(Jugador,_)),
                 assertz(mazoJugador(Jugador,MazoModificado)),
@@ -195,6 +297,8 @@ intermedio(Jugada):-
         turno(J),
         mazoJugador(J,ManoActual),
         borraMaz2(Jugada,ManoActual,ManoModificada),
+        write("Mano Actual --> "),write(ManoActual),nl,
+        write("Mano Nueva --> "),write(ManoModificada),nl,nl,
         retractall(mazoJugador(J,_)),
         assertz(mazoJugador(J,ManoModificada)).
 
