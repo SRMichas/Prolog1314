@@ -87,9 +87,15 @@ miniMenu :-
 juegoNormal:-   
                 turno(J),
                 mazoJugador(J,Mazo),
+                write("En donde quieres aplicar la Jugada {1} -> Tercias , {2} -> Ecaleras "),read(Opcion),
+                (
+                        Opcion =:= 1 -> TipoJugada=tercias;
+                        Opcion=:=2 -> TipoJugada = escaleras ;
+                        write(" Che pendejo no sabes leer "),nl,nl,miniMenu
+                ),
                 write("Que ficha quieres pones -->[[Ficha],[FIcha]. . .[Ficha]] --> "),read(FichasElegidas),
                 (checarInt(FichasElegidas,Mazo)->
-                                proc(FichasElegidas),cambiarTurnoNormal,miniMenu;
+                                proc(FichasElegidas,TipoJugada),cambiarTurnoNormal,miniMenu;
                                 write("NO se puede morro(a), checa la baraja que pusiste!!!!"),nl,
                                 miniMenu
                 ).
@@ -113,47 +119,102 @@ checarInt([H|T],Mazo):-
                 pertenece(H,Mazo), %[1,negro] -->
                 checarInt(T,Mazo).
 
-proc(Lista):-   length(Lista,L),L>=3,jugar1(Lista,Rsp,TipoJ),intermedio(Lista),
+proc(Lista,_):- length(Lista,L),L>=3,jugar1(Lista,Rsp,TipoJ),intermedio(Lista),
                 write("Jugada Valida ---> "),write(Rsp),
                 write(" y fue una : "),write(TipoJ),nl,nl,
                 agregarJugada(TipoJ,Rsp).
 %[[1,rojo],[1,rojo]]
-proc(Jugada) :- 
+/*proc(Jugada) :- 
         [FichaH|T] = Jugada,
         [Numero,Color] = FichaH,
         mesaJugadas(tercias,Tercias),
         length(Jugada,L),L>0,L<3,write("Fichas ->"),write(Jugada),nl,nl,
         filtroNumero(Numero,Tercias,ListaFiltrada),
-        checarColores(Color,ListaFiltrada,JugadaDefinitiva).
+        checarColores(Color,ListaFiltrada,JugadaDefinitiva).*/
 % Aqui nos quedamos
 
 /* ?- checarColores(negro,[[[1,azul],[1,verde],[1,negro]],[[1,verde],[1,rojo],[1,azul]]],R).      
         R = [[1, verde], [1, rojo], [1, azul]].*/
-checarColores(Color,[],_).
-checarColores(Color,[H|T],JugadaDefinitiva):-
-              getNumerosCol(H,_,ListaColores),
-              pertenece(Color,ListaColores) ->
-                        checarColores(Color,T,JugadaDefinitiva);
-                        JugadaDefinitiva = H.
 
 
+proc(Jugada,TipoJugada) :-
+        [FichaH|T] = Jugada,
+        [Numero,Color] = FichaH,
+        mesaJugadas(TipoJugada,JugadasMesa),
+        length(Jugada,L),L>0,L<3,write("Fichas ->"),write(Jugada),nl,nl,
+        (TipoJugada == tercias ->
+                filtroNumero(Numero,JugadasMesa,ListaFiltrada),
+                write(ListaFiltrada),nl,nl,
+                checarColores2(FichaH,ListaFiltrada,JugadaDefinitiva,JugadaAbuscar),
+                buscarReemplazar(TipoJugada,JugadaAbuscar,JugadaDefinitiva),
+                print(JugadaDefinitiva),nl,nl ;
+        TipoJugada == escaleras -> 
+                filtroColor(Color,JugadasMesa,ListaFiltradaNum),
+                write(ListaFiltradaNum),nl,nl,
+                checarNumeros(FichaH,ListaFiltradaNum,JugadaDefinitiva,JugadaAbuscar),
+                buscarReemplazar(TipoJugada,JugadaAbuscar,JugadaDefinitiva),
+                print(JugadaDefinitiva),nl,nl
+        ).
 
-predicadoSoria(Ficha,[X]) :- append([X],Ficha,Resp).
-predicadoSoria([_,Color],[H|T]) :-
-                [[_,ColorC]|_] = H,
-                Color == ColorC.
+        
+        /*Ficha = [[9,negro]]                                             TRUE = 1
+        ListaFiltrada = [[[9, verde], [9, azul], [9, negro]], [[9, verde], [9, azul], [9, rojo]]]
+        JugadaDefinitiva = [[9, verde], [9, azul], [9, rojo],[9,negro]]
+        TipoJ = tercias.*/
 
-% ========= GETNUMEROSCOLORES ========= 
-% getNumerosCol(+ListaFichas,?ListaNumeros,?ListaColores).
-% ? getNumerosCol([[1,rojo],[3,azul],[3,rojo],[2,negro]], Num, Col).
-% ? Num = [1,3,3,2]
-% ? Col = [rojo,azul,rojo,negro]
-getNumerosCol([],[],[]).
-getNumerosCol([H|T], Numeros, Colores) :-
-    [Numero|Color] = H,
-    getNumerosCol(T,NAcumulador,CAcumulador),
-    append([Numero],NAcumulador,Numeros),
-    append(Color,CAcumulador,Colores).
+% Aqui nos quedamos
+
+checarColores2(_,[],_,_).
+checarColores2(Ficha,[H|T],JugadaDefinitiva,JugadaAbuscar):-
+                %write(H),nl,nl,
+                predicadoSoria2(Ficha,H,Resp),
+                (
+                    Resp =:= 1 -> append(H,[Ficha],JugadaDefinitiva),JugadaAbuscar = H,/*write(Lista),*/nl,nl;
+                    checarColores2(Ficha,T,_)
+                ).
+
+checarNumeros(_,[],_,_).
+checarNumeros(Ficha,[H|T],JugadaDefinitiva,JugadaAbuscar):-
+                %write(H),nl,nl,
+                predicadoSoria3(Ficha,H,Resp),
+                (
+                    Resp =:= 1 -> append([Ficha],H,JugadaDefinitiva),JugadaAbuscar = H,write(Lista),nl,nl;
+                    Resp =:= 2 -> append(H,[Ficha],JugadaDefinitiva),JugadaAbuscar = H,write(Lista),nl,nl;
+                    checarNumeros(Ficha,T,_)
+                    
+                ).
+
+predicadoSoria2(_,[],1).
+predicadoSoria2([N,Color],[H|T],Resp) :-
+        [_,ColorC|_] = H,
+        (
+            not(Color == ColorC) -> predicadoSoria2([N,Color],T,Resp) ; Resp = 0
+        ).
+
+predicadoSoria3(_,[],0).
+predicadoSoria3([N,Color],Lista,Resp) :-
+    [H|T] = Lista,
+    %write(Lista),nl,nl,
+    nth1(1,Lista,Primero),length(Lista,L),nth1(L,Lista,Ultimo),
+    [NPr,_] = Primero,[NUlt,_] = Ultimo,
+    (  N =:= NPr-1 -> Resp = 1 ;
+       N =:= NUlt+1 -> Resp = 2 ;    
+       predicadoSoria3([N,Color],T,Resp)
+    ).
+
+buscarReemplazar(TipoJ,JugadaBuscar,JugadaReemplazar) :-
+                        %[JugadaBu|_] = JugadaB,
+                        mesaJugadas(TipoJ,Tercias),
+                        reemplaza(JugadaBuscar,Tercias,JugadaReemplazar,Rsp),
+                        retractall(mesaJugadas(TipoJ,_)),
+                        asserta(mesaJugadas(TipoJ,Rsp)).
+
+reemplaza(_,[],_,[]).
+reemplaza(Jugada,[H|T],JugadaR,[HR|TR]) :-
+                Jugada == H ->  HR = JugadaR,  TR = T ;
+                                HR = H, reemplaza(Jugada,T,JugadaR,TR).
+
+
 
 
 filtroNumero(_,[],[]).
@@ -172,12 +233,12 @@ filtroColor(_,[],[]).
 filtroColor(Color,[H|T],[H|TR]) :-
         [[_,ColorC]|_] = H,
         Color == ColorC,
-        filtroNumero(Numero,T,TR).
+        filtroColor(Color,T,TR).
 
 filtroColor(Color,[H|T],Resp) :-
         [[_,ColorC]|_] = H,
         not(Color == ColorC),
-        filtroNumero(Color,T,Resp).
+        filtroColor(Color,T,Resp).
 
 
 
