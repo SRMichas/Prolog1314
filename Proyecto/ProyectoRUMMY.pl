@@ -67,7 +67,7 @@ primeraJugada :- turno(J),mazoJugador(J,Mazo),
 revisaEscribe :-
         read(X),writeln(X).
 
-miniMenu :-     
+imprimeCabezeraMiniMenu :- 
                 turno(J), 
                 nl,write("Jugador en turno ~~~~ ["),write(J),write("] ~~~~"),nl,
                 mazoJugador(J,Mazo),write(Mazo),nl,nl,
@@ -75,7 +75,10 @@ miniMenu :-
                 mesaJugadas(escaleras,Escaleras),
                 write("-----Mesa de Jugadas----- "),nl,
                 write("Tercias ====>"),write(Tercias),nl,nl,
-                write("Escaleras ====>"),write(Escaleras),nl,nl,                
+                write("Escaleras ====>"),write(Escaleras),nl,nl.
+
+miniMenu :-     
+                imprimeCabezeraMiniMenu,        
                 write("Que quieres hacer? {f} para poner fichas o {p} para pasar --> "),read(Opcion),
                 (
                         Opcion == f -> juegoNormal ;
@@ -136,24 +139,38 @@ proc(Lista,_):- length(Lista,L),L>=3,jugar1(Lista,Rsp,TipoJ),intermedio(Lista),
 /* ?- checarColores(negro,[[[1,azul],[1,verde],[1,negro]],[[1,verde],[1,rojo],[1,azul]]],R).      
         R = [[1, verde], [1, rojo], [1, azul]].*/
 
-
 proc(Jugada,TipoJugada) :-
         [FichaH|T] = Jugada,
         [Numero,Color] = FichaH,
         mesaJugadas(TipoJugada,JugadasMesa),
-        length(Jugada,L),L>0,L<3,write("Fichas ->"),write(Jugada),nl,nl,
+        length(Jugada,L),L>0,L<3,write("Fichas ->"),write(Jugada),nl,nl,   % []  TERCIAS ==> [[[1,azul],[1,negro],[1,rojo]],[[1,negro],[1,verde],[1,rojo]]]
         (TipoJugada == tercias ->
-                filtroNumero(Numero,JugadasMesa,ListaFiltrada),
-                write(ListaFiltrada),nl,nl,
-                checarColores2(FichaH,ListaFiltrada,JugadaDefinitiva,JugadaAbuscar),
-                buscarReemplazar(TipoJugada,JugadaAbuscar,JugadaDefinitiva),
-                print(JugadaDefinitiva),nl,nl ;
-        TipoJugada == escaleras -> 
-                filtroColor(Color,JugadasMesa,ListaFiltradaNum),
-                write(ListaFiltradaNum),nl,nl,
-                checarNumeros(FichaH,ListaFiltradaNum,JugadaDefinitiva,JugadaAbuscar),
-                buscarReemplazar(TipoJugada,JugadaAbuscar,JugadaDefinitiva),
-                print(JugadaDefinitiva),nl,nl
+                (
+                        
+                        (
+                                (L =:= 1) ->
+                                        filtroNumero(Numero,JugadasMesa,ListaFiltrada),
+                                        write("Lista FILTRADA ==>"),write(ListaFiltrada),nl,nl, 
+                                        checarColores2(FichaH,ListaFiltrada,JugadaDefinitiva,JugadaAbuscar),
+                                        buscarReemplazar(TipoJugada,JugadaAbuscar,JugadaDefinitiva),
+                                        write("Lista DEFINITIVA ==>"),print(JugadaDefinitiva),nl,nl,
+                                        intermedio(Jugada);
+                                        filtroNumeroCortar(Numero,JugadasMesa,ListaFiltrada),
+                                        write("Lista FILTRADA ==>"),write(ListaFiltrada),nl,nl,
+                                        cortarTercia(Jugada,ListaFiltrada,JugadaNueva),
+                                        agregarJugada(TipoJugada,JugadaNueva),
+                                        write("Lista Definitiva Cortar"),print(JugadaNueva),nl,nl,
+                                        write("nueva seccion en construccion"),
+                                        intermedio(Jugada)
+                        )
+                );
+        TipoJugada == escaleras ->
+                        filtroColor(Color,JugadasMesa,ListaFiltradaNum),
+                        write(ListaFiltradaNum),nl,nl,
+                        checarNumeros(FichaH,ListaFiltradaNum,JugadaDefinitiva,JugadaAbuscar),
+                        buscarReemplazar(TipoJugada,JugadaAbuscar,JugadaDefinitiva),
+                        print(JugadaDefinitiva),nl,nl,
+                        intermedio(Jugada) 
         ).
 
         
@@ -163,14 +180,38 @@ proc(Jugada,TipoJugada) :-
         TipoJ = tercias.*/
 
 % Aqui nos quedamos
+cortarTercia(_,[],[]).
+cortarTercia([CARTA1,CARTA2],[HM|TM],Resp):-
+        length(HM,L),
+        L =:= 4 -> encuentraTerciaCortar([CARTA1,CARTA2],HM,Resp,FichaAquitar),
+        mesaJugadas(tercias,MesaTercias),remover2(HM,MesaTercias,MesaSinJugadaAquitar),
+        write("MESA SIN JUGADA A QUITAR --------->"),write(MesaSinJugadaAquitar),nl,nl,
+        remover2(FichaAquitar,HM,JugadaSinFicha),
+        write("JUGADA SIN LA FICHA CULERA ----->"),write(JugadaSinFicha),nl,nl,
+        actualizaMesaJugadas(tercias,MesaSinJugadaAquitar),
+        agregarJugada(tercias,JugadaSinFicha);
+            cortarTercia([CARTA1,CARTA2],TM,Resp).
+
+
+        
+encuentraTerciaCortar(_,[],[],_).
+encuentraTerciaCortar([[N,Color1],[_,Color2]],[[_,ColorM]|_],Resp,FichaAquitar):-
+        dif(Color1,ColorM),dif(Color2,ColorM),
+        append([[N,Color1],[N,Color2]],[[N,ColorM]],Resp),
+        FichaAquitar = [N,ColorM].
+
+encuentraTerciaCortar([[N,Color1],[_,Color2]],[[_,ColorM]|T],Resp,FichaAquitar):-
+    (not(dif(ColorM,Color1));not(dif(ColorM,Color2))),
+    encuentraTerciaCortar([[N,Color1],[_,Color2]],T,Resp,FichaAquitar).
+        
 
 checarColores2(_,[],_,_).
 checarColores2(Ficha,[H|T],JugadaDefinitiva,JugadaAbuscar):-
                 %write(H),nl,nl,
                 predicadoSoria2(Ficha,H,Resp),
                 (
-                    Resp =:= 1 -> append(H,[Ficha],JugadaDefinitiva),JugadaAbuscar = H,/*write(Lista),*/nl,nl;
-                    checarColores2(Ficha,T,_)
+                    Resp =:= 1 -> append(H,[Ficha],JugadaDefinitiva),JugadaAbuscar = H,/*write(JugadaDefinitiva),*/nl,nl;
+                    checarColores2(Ficha,T,JugadaDefinitiva,JugadaAbuscar)
                 ).
 
 checarNumeros(_,[],_,_).
@@ -180,7 +221,7 @@ checarNumeros(Ficha,[H|T],JugadaDefinitiva,JugadaAbuscar):-
                 (
                     Resp =:= 1 -> append([Ficha],H,JugadaDefinitiva),JugadaAbuscar = H,write(Lista),nl,nl;
                     Resp =:= 2 -> append(H,[Ficha],JugadaDefinitiva),JugadaAbuscar = H,write(Lista),nl,nl;
-                    checarNumeros(Ficha,T,_)
+                    checarNumeros(Ficha,T,_,JugadaAbuscar)
                     
                 ).
 
@@ -215,8 +256,6 @@ reemplaza(Jugada,[H|T],JugadaR,[HR|TR]) :-
                                 HR = H, reemplaza(Jugada,T,JugadaR,TR).
 
 
-
-
 filtroNumero(_,[],[]).
 filtroNumero(Numero,[H|T],[H|TR]) :-
         [[NumeroC,_]|_] = H,
@@ -224,10 +263,31 @@ filtroNumero(Numero,[H|T],[H|TR]) :-
         length(H,L),
         L =:= 3,
         filtroNumero(Numero,T,TR).
+
+filtroNumero(Numero,[H|T],Resp) :-
+        [[NumeroC,_]|_] = H,
+        Numero =:= NumeroC,
+        length(H,L),
+        not(L =:= 3),
+        filtroNumero(Numero,T,Resp).
+
 filtroNumero(Numero,[H|T],Resp) :-
         [[NumeroC,_]|_] = H,
         not(Numero =:= NumeroC),
         filtroNumero(Numero,T,Resp).
+
+filtroNumeroCortar(_,[],[]).
+filtroNumeroCortar(Numero,[H|T],[H|TR]) :-
+        [[NumeroC,_]|_] = H,
+        Numero =:= NumeroC,
+        length(H,L),
+        L =:= 4,
+        filtroNumero(Numero,T,TR).
+filtroNumeroCortar(Numero,[H|T],Resp) :-
+        [[NumeroC,_]|_] = H,
+        not(Numero =:= NumeroC),
+        filtroNumero(Numero,T,Resp).
+
 
 filtroColor(_,[],[]).
 filtroColor(Color,[H|T],[H|TR]) :-
@@ -241,14 +301,6 @@ filtroColor(Color,[H|T],Resp) :-
         filtroColor(Color,T,Resp).
 
 
-
-
-               
-% Ficha Jugador --> 1ro -> Tercia ¿Cabe en alguna Jugada ? si -> acomodas
-                       %-> Escaleras -> ¿Cabe en alguna Jugada? ->Si ->Acomodas 
-                                %                                                                       No ->Se sale y le dices al jugador que no se puede 
-                                %                                                                            acoplar a nada esas fichas -> Se le da la opcion de pasar.
-% Escalera -> 1 2 3 4 5
 
 % ==========================================APARTADO DE RESETEO DE VARIABLES DEL JUEGO============================
 reseteaJuego :-
@@ -329,6 +381,12 @@ comerFicha:-
 reescribeMesaPila(NuevaMesa):-
             retractall(mesa(_)),
             assertz(mesa(NuevaMesa)).
+
+actualizaMesaJugadas(TipoJugada,NuevaMesaJugadas):-
+                retractall(mesaJugadas(TipoJugada,_)),
+                assertz(mesaJugadas(TipoJugada,NuevaMesaJugadas)).   
+
+      
 
 quitaCartas(L1,L2,R) :-
         borrar(L1,L2,R).
@@ -531,3 +589,13 @@ validaEscalera([Actual,SigN|T],ListaA,Rsp) :-
 validaEscalera([Actual,SigN|_],ListaA,Rsp) :-
     not(Actual =:= SigN-1),
     append(ListaA,[Actual],Rsp).
+
+/*
+jugador 1 = 10
+jugador 2 = 12
+
+1 2 3 - 5 6 7 - 4 5 6
+
+1 1 1 1 - 3 3 3 - 3 3 3 
+
+*/
