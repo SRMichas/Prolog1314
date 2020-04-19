@@ -4,7 +4,7 @@
 :- dynamic mesaJugadas/2.
 :- dynamic bandera1raJugada/1.
 :- dynamic mesaJugada/1.
-:- dynamic contador/1.
+:- dynamic ambosPasan/1.
 
 
 mesaJugadas(tercias,[]).
@@ -17,18 +17,18 @@ jugador(j2).
 /*mazoJugador(j1,[[1,azul],[2,rojo],[1,negro],[1,verde]]).
 mazoJugador(j2,[[11,azul],[2,rojo],[11,negro],[11,verde]]).*/
 
-mazoJugador(j1,[[1,azul],[2,rojo],[1,negro],[1,verde]]).
-mazoJugador(j2,[[11,azul],[2,rojo],[11,negro],[11,verde]]).
+% mazoJugador(j1,[[1,azul],[2,rojo],[1,negro],[1,verde]]).
+% mazoJugador(j2,[[11,azul],[2,rojo],[11,negro],[11,verde]]).
 
-mazoJugador(jp,[[1,verde],[1,rojo],[1,azul],[7,rojo],[7,rojo]]).
+% mazoJugador(jp,[[1,verde],[1,rojo],[1,azul],[7,rojo],[7,rojo]]).
 
 turno(_).
-
 mesa([]).
 mesaJugada([]).
 
 bandera1raJugada(false).
-contador(0).
+
+ambosPasan(0).
 
 empieza :-
     reseteaJuego,
@@ -43,17 +43,16 @@ empieza :-
     writeln("\n\n"),
     reparte,
     primeraJugada,nl,
-    %write("paso lo primero"),nl,
     miniMenu.
     
 
 reparte :-
         mesa(Mazo),
-        sublista(Mazo,14,ListaJ1), agregaMazo(j1,ListaJ1),
+        sublista(Mazo,52,ListaJ1), agregaMazo(j1,ListaJ1),
         quitaCartas(ListaJ1,Mazo,SemiRepartida),
         write("----------MAZO JUGADOR-------------- "),write("j1 \n"),
         otroImprime(ListaJ1),
-        sublista(SemiRepartida,14,ListaJ2), agregaMazo(j2,ListaJ2),
+        sublista(SemiRepartida,52,ListaJ2), agregaMazo(j2,ListaJ2),
         quitaCartas(ListaJ2,SemiRepartida,Repartidas),
         write("----------MAZO JUGADOR-------------- "),write("j2 \n"),
         otroImprime(ListaJ2),       %irrelabante solo con fines de mostrar
@@ -70,7 +69,12 @@ revisaEscribe :-
 imprimeCabezeraMiniMenu :- 
                 turno(J), 
                 nl,write("Jugador en turno ~~~~ ["),write(J),write("] ~~~~"),nl,
-                mazoJugador(J,Mazo),write(Mazo),nl,nl,
+                mesa(Pila),length(Pila,L),
+                write("Restantes ====>> "),write(L),nl,nl,
+                mazoJugador(J,Mazo),
+                write(Mazo),nl
+                %imprimeCartas(Mazo),nl
+                ,nl,
                 mesaJugadas(tercias,Tercias),
                 mesaJugadas(escaleras,Escaleras),
                 write("-----Mesa de Jugadas----- "),nl,
@@ -81,8 +85,20 @@ miniMenu :-
                 imprimeCabezeraMiniMenu,        
                 write("Que quieres hacer? {f} para poner fichas o {p} para pasar --> "),read(Opcion),
                 (
-                        Opcion == f -> juegoNormal ;
-                        Opcion == p -> pasarConComer ;
+                        Opcion == f -> reiniciarPasan,juegoNormal;
+                        Opcion == p -> 
+                                mesa(MesaPila),
+                                length(MesaPila,L),
+                                %write("Tamño de la pila ==> "),writeln(L),
+                                        (L =:= 0 ->
+                                        
+                                        ambosPasan(V), A is V+1,modificarPasan(A),
+                                        nl,validarGanador(G),nl,
+                                        (G =:= 0 -> miniMenu ; !)
+                                        ; 
+                                        pasarConComer
+                                        )
+                                ;
                         write("Chamaco ingrato, haz caso a lo que se te esta pidiendo >:c .... "),nl,nl,
                         miniMenu
                 ).
@@ -93,12 +109,19 @@ juegoNormal:-
                 write("En donde quieres aplicar la Jugada {1} -> Tercias , {2} -> Ecaleras "),read(Opcion),
                 (
                         Opcion =:= 1 -> TipoJugada=tercias;
-                        Opcion=:=2 -> TipoJugada = escaleras ;
+                        Opcion =:=2 -> TipoJugada = escaleras ;
                         write(" Che pendejo no sabes leer "),nl,nl,miniMenu
                 ),
                 write("Que ficha quieres pones -->[[Ficha],[FIcha]. . .[Ficha]] --> "),read(FichasElegidas),
-                (checarInt(FichasElegidas,Mazo)->
-                                proc(FichasElegidas,TipoJugada),cambiarTurnoNormal,miniMenu;
+                (
+                        checarInt(FichasElegidas,Mazo)->
+                                proc(FichasElegidas,TipoJugada),
+                                validarGanador(Valor),
+                                (
+                                Valor =:= 0 -> cambiarTurnoNormal, miniMenu;
+                                Valor =:= 1 -> write("Se acabo el Juego")
+                                )
+                                ;
                                 write("NO se puede morro(a), checa la baraja que pusiste!!!!"),nl,
                                 miniMenu
                 ).
@@ -109,10 +132,15 @@ caele al discord.... --> 5:00 pm
 */
 
 %================================================================================================================================================
+modificarPasan(A):-
+        retract(ambosPasan(_)),
+        asserta(ambosPasan(A)).
 
-
-
+reiniciarPasan:-
+        retract(ambosPasan(_)),
+        asserta(ambosPasan(0)).
 %================================================================================================================================================
+
 
 pertenece(E,[E|_]).
 pertenece(E,[_|T]):- pertenece(E,T).
@@ -167,19 +195,102 @@ proc(Jugada,TipoJugada) :-
         TipoJugada == escaleras ->
                         filtroColor(Color,JugadasMesa,ListaFiltradaNum),
                         write(ListaFiltradaNum),nl,nl,
-                        checarNumeros(FichaH,ListaFiltradaNum,JugadaDefinitiva,JugadaAbuscar),
-                        buscarReemplazar(TipoJugada,JugadaAbuscar,JugadaDefinitiva),
-                        print(JugadaDefinitiva),nl,nl,
-                        intermedio(Jugada) 
+                        sort(Jugada,JugadaOrd),
+                        write("Cortar {1}  o  Acompletar {2} ==> "),read(Opcion),
+                        (       Opcion =:=1 -> 
+                                
+                                cortarEscaleras(JugadaOrd,ListaFiltradaNum,JugadaNueva,OtraJugada),
+                                write("Jugada 1 :: "),write(JugadaNueva),nl,nl,
+                                write("Jugada 2 :: "),write(OtraJugada),nl,nl;
+                                Opcion =:= 2 -> 
+                                checarNumeros(JugadaOrd,ListaFiltradaNum,JugadaDefinitiva,JugadaAbuscar),
+                                buscarReemplazar(TipoJugada,JugadaAbuscar,JugadaDefinitiva),
+                                print(JugadaDefinitiva),nl,nl,
+                                intermedio(JugadaOrd)
+                                
+                        )
         ).
 
         
-        /*Ficha = [[9,negro]]                                             TRUE = 1
-        ListaFiltrada = [[[9, verde], [9, azul], [9, negro]], [[9, verde], [9, azul], [9, rojo]]]
-        JugadaDefinitiva = [[9, verde], [9, azul], [9, rojo],[9,negro]]
-        TipoJ = tercias.*/
+/* Ficha = [[9,negro]]                                             TRUE = 1
+ListaFiltrada = [[[9, verde], [9, azul], [9, negro]], [[9, verde], [9, azul], [9, rojo]]]
+JugadaDefinitiva = [[9, verde], [9, azul], [9, rojo],[9,negro]]
+TipoJ = tercias.
+mesaJugadasEscaleras = [[[7,verde], [8,verde], [9,verde]]]
+Jugada = [[10,verde],[12,verde]]
+checarNumeros([[[10,verde],[6,verde]],)
+[[[10,verde],[6,verde]]
 
+checarNumeros([[4,verde]],[[[2,verde],[3,verde],[4,verde],[5,verde],[6,verde]]],X,Y).
+
+Cuando la Jugada Sea longitud de 1 primero y la carta que se manda se encuentra en la escalera
+-> checar si hay minimamente 2 cartas a la derecha de ella y ala izq de ella,
+mandar al jugador la desicion de hacia donde cortar.
+
+nuevaEscalera = [[4,verde]]
+[[[2,verde],[3,verde], { [4,verde] }, [5,verde],[6,verde]]]
+[[[3,verde], { [4,verde] }, [5,verde],[6,verde]]]
+
+buscarYcortar([4,verde],[[2,verde],[3,verde],[4,verde], [5,verde],[6,verde]],X,Y).
+buscarYcortar([4,verde],[[1,verde],[2,verde],[3,verde],[4,verde], [5,verde],[6,verde]],X,Y).
+cortarEscaleras([[10,azul]],[[[8,azul],[9,azul],[10,azul],[11,azul],[12,azul]]],X,Y).
+
+izq => 2
+dere => 2 -> corta derecha
+
+hay 2 elementos o mas a la izquierda? ==> nel
+hay 3 elementos o mas a la derecha? smn
+resultado ========> [2,verde],[3,verde]
+
+*/
 % Aqui nos quedamos
+cortarEscaleras([],_,_,_).
+cortarEscaleras([],[],_,_).
+cortarEscaleras([H|T],[HJ|TJ],Resp1,Resp2) :-
+        TipoJugada = escaleras,
+        length([H|T],L),
+        (
+                L=:= 1 -> 
+                        buscarYcortar(H,HJ,R1,R2),
+                        length(R1,L1),length(R2,L2),
+                        (
+                                L1 >= 2 , L2 >= 2 ->
+                                        write("Cortar a la Izquierda {1} o a la derecha {2} "),
+                                        read(X),
+                                        (
+                                                X =:= 1 -> 
+                                                    append(R1,[H],Resp1),append([H],R2,Resp2),
+                                                    mesaJugadas(TipoJugada,Escaleras),
+                                                    remover2(HJ,Escaleras,NuevaEscalera),
+                                                    write(NuevaEscalera),nl,nl,
+                                                    actualizaMesaJugadas(TipoJugada,NuevaEscalera),
+                                                    agregarJugada(TipoJugada,Resp1),
+                                                    agregarJugada(TipoJugada,Resp2)
+                                                ;
+                                                X =:= 2 -> append(R1,[H],Resp1),append([H],R2,Resp2),
+                                                mesaJugadas(TipoJugada,Escaleras),
+                                                    remover2(HJ,Escaleras,NuevaEscalera),
+                                                    actualizaMesaJugadas(TipoJugada,NuevaEscalera),
+                                                    agregarJugada(TipoJugada,Resp1),
+                                                    agregarJugada(TipoJugada,Resp2)
+                                        ) ;
+                                cortarEscaleras([H|T],TJ,Resp1,Resp2)
+                                
+                        )
+
+        ).
+
+buscarYcortar(_,[],[],[]).
+buscarYcortar(Ficha,Lista,[],T) :-
+        [H|T] = Lista,
+        Ficha == H.
+
+buscarYcortar(Ficha,Lista,[H|T2],Rsp) :-
+        [H|T] = Lista,
+        not(Ficha == H),
+        buscarYcortar(Ficha,T,T2,Rsp).
+
+        
 cortarTercia(_,[],[]).
 cortarTercia([CARTA1,CARTA2],[HM|TM],Resp):-
         length(HM,L),
@@ -190,13 +301,11 @@ cortarTercia([CARTA1,CARTA2],[HM|TM],Resp):-
         write("JUGADA SIN LA FICHA CULERA ----->"),write(JugadaSinFicha),nl,nl,
         actualizaMesaJugadas(tercias,MesaSinJugadaAquitar),
         agregarJugada(tercias,JugadaSinFicha);
-            cortarTercia([CARTA1,CARTA2],TM,Resp).
+        cortarTercia([CARTA1,CARTA2],TM,Resp).
 
-
-        
 encuentraTerciaCortar(_,[],[],_).
 encuentraTerciaCortar([[N,Color1],[_,Color2]],[[_,ColorM]|_],Resp,FichaAquitar):-
-        dif(Color1,ColorM),dif(Color2,ColorM),
+        dif(Color1,ColorM),dif(Color2,ColorM),  
         append([[N,Color1],[N,Color2]],[[N,ColorM]],Resp),
         FichaAquitar = [N,ColorM].
 
@@ -214,16 +323,29 @@ checarColores2(Ficha,[H|T],JugadaDefinitiva,JugadaAbuscar):-
                     checarColores2(Ficha,T,JugadaDefinitiva,JugadaAbuscar)
                 ).
 
-checarNumeros(_,[],_,_).
-checarNumeros(Ficha,[H|T],JugadaDefinitiva,JugadaAbuscar):-
+checarNumeros([],_,_,_).
+checarNumeros([],[],_,_).
+/*checarNumeros([[6,verde],[10,verde]],[[[7,verde],[8,verde],[9,verde]]]*/
+checarNumeros([Ficha|Resto],[H|T],JugadaDefinitiva,JugadaAbuscar):-
                 %write(H),nl,nl,
                 predicadoSoria3(Ficha,H,Resp),
                 (
-                    Resp =:= 1 -> append([Ficha],H,JugadaDefinitiva),JugadaAbuscar = H,write(Lista),nl,nl;
-                    Resp =:= 2 -> append(H,[Ficha],JugadaDefinitiva),JugadaAbuscar = H,write(Lista),nl,nl;
-                    checarNumeros(Ficha,T,_,JugadaAbuscar)
+                    Resp =:= 1 -> 
+                    append([Ficha],H,LAux),
+                    sort(LAux,LOrdAux),
+                    checarNumeros(Resto,[LOrdAux],A,B),
+                    append([Ficha|Resto],H,Auxiliar),JugadaAbuscar = H,
+                    JugadaDefinitiva  = A,
+                    sort(Auxiliar,JugadaDefinitiva),
+                    write(JugadaDefinitiva),nl,nl;
+                     
+                   /* Resp =:= 2 -> checarNumeros(Resto,[H|T],A,_),
+                    append(A,[Ficha],JugadaDefinitiva),JugadaAbuscar = H,write(JugadaDefinitiva),nl,nl;
+                   */
+                    checarNumeros([Ficha|Resto],T,_,JugadaAbuscar)
                     
                 ).
+
 
 predicadoSoria2(_,[],1).
 predicadoSoria2([N,Color],[H|T],Resp) :-
@@ -239,7 +361,7 @@ predicadoSoria3([N,Color],Lista,Resp) :-
     nth1(1,Lista,Primero),length(Lista,L),nth1(L,Lista,Ultimo),
     [NPr,_] = Primero,[NUlt,_] = Ultimo,
     (  N =:= NPr-1 -> Resp = 1 ;
-       N =:= NUlt+1 -> Resp = 2 ;    
+       N =:= NUlt+1 -> Resp = 1;    
        predicadoSoria3([N,Color],T,Resp)
     ).
 
@@ -310,7 +432,8 @@ reseteaJuego :-
         retractall(mazoJugador(j2,_)),assertz(mazoJugador(j2,[])),
         retractall(mesa(_)),assertz(mesa([])),
         retractall(mesaJugadas(tercias,_)),assertz(mesaJugadas(tercias,[])),
-        retractall(mesaJugadas(escaleras,_)),assertz(mesaJugadas(escaleras,[])). 
+        retractall(mesaJugadas(escaleras,_)),assertz(mesaJugadas(escaleras,[])),
+        reiniciarPasan.
 
 %==============================================================================================================================
 ponerFichas2(Mazo) :-
@@ -328,6 +451,7 @@ ponerFichas2(Mazo) :-
                                 write("--------Cartas modificadas de "),write(J),
                                 write("----------"),nl,
                                 write(Cartitas),nl;
+                                %imprimeCartas(Cartitas),nl;
                                 comerFicha, pasar.
 %==============================================================================================================================
 
@@ -416,8 +540,8 @@ intermedio(Jugada):-
         turno(J),
         mazoJugador(J,ManoActual),
         borraMaz2(Jugada,ManoActual,ManoModificada),
-        write("Mano Actual --> "),write(ManoActual),nl,
-        write("Mano Nueva --> "),write(ManoModificada),nl,nl,
+        /*write("Mano Actual --> "),write(ManoActual),nl,
+        write("Mano Nueva --> "),write(ManoModificada),nl,nl,*/
         retractall(mazoJugador(J,_)),
         assertz(mazoJugador(J,ManoModificada)).
 
@@ -599,3 +723,102 @@ jugador 2 = 12
 1 1 1 1 - 3 3 3 - 3 3 3 
 
 */
+
+imprimeCartas(Lista) :-
+        length(Lista,L),
+        impresion(Lista,L).
+impresion(Lista,Long) :-
+        Long < 10 -> 
+            repiteEimprimeN(Long,"\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"),nl,
+            repiteEimprimeN(Long,"\u2551          \u2551"),nl,
+            imprimeNumCont(Lista),nl,
+            imprimeColCont(Lista),nl,
+            repiteEimprimeN(Long,"\u2551          \u2551"),nl,
+            repiteEimprimeN(Long,"\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D"),nl;
+        Long > 10 -> 
+            Laux is Long - 10,
+            sublista2(Lista,10,Resp1,Resto),
+            repiteEimprimeN(10,"\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"),nl,
+            repiteEimprimeN(10,"\u2551          \u2551"),nl,
+            imprimeNumCont(Resp1),nl,
+            imprimeColCont(Resp1),nl,
+            repiteEimprimeN(10,"\u2551          \u2551"),nl,
+            repiteEimprimeN(10,"\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D"),nl,
+            impresion(Resto,Laux) .
+
+imprimeNumCont([]).
+imprimeNumCont([H|T]) :-
+    [Num,_] = H,
+    (
+        Num < 10 -> write("\u2551     "),write(Num),write("    \u2551") ;
+        write("\u2551    "),write(Num),write("    \u2551")
+    ),
+    write(" "),
+    imprimeNumCont(T).
+
+imprimeColCont([]).
+imprimeColCont([H|T]) :-
+    [_,Col] = H,
+    (
+        Col == rojo -> write("\u2551   "),write(Col),write("   \u2551");
+        Col == azul -> write("\u2551   "),write(Col),write("   \u2551");
+        Col == verde -> write("\u2551  "),write(Col),write("   \u2551");
+        Col == negro -> write("\u2551  "),write(Col),write("   \u2551");
+        write("\u2551 "),write(Col),write("  \u2551")
+),
+write(" "),
+imprimeColCont(T).
+
+
+repiteEimprimeN(0,_).
+repiteEimprimeN(N,Imprimir) :-
+        N > 0,
+        Naux is N - 1,
+        write(Imprimir),
+        write(" "),
+        repiteEimprimeN(Naux,Imprimir).
+
+sublista2(X,0,[],X).       
+sublista2([H|T],N,[H|RT],T1) :-     %
+        N > 0,                  %
+        Naux is N - 1,          %
+        sublista2(T,Naux,RT,T1). 
+
+% ==== ===========================================================APARTADO A VER QUIEN GANA========================
+
+validarGanador(Valor) :-
+    turno(J),
+    mazoJugador(J,Mazo),
+    mesa(PilaCartas),
+    ambosPasan(V1),
+    length(Mazo,LMazo),
+    length(PilaCartas,LPila),
+    (
+            LMazo =:= 0 -> 
+                    write("Se Acabo el Juego Sin cartas..... "),nl,
+                    write(J), write(" A ganado el juego"),
+                    Valor = 1       ;
+            LPila =:= 0 ->
+            (
+                    V1 =:= 2 -> 
+                            mazoJugador(j1,MazoJ1),
+                            mazoJugador(j2,MazoJ2),
+                            length(MazoJ1,LMJ1),
+                            length(MazoJ2,LMJ2),
+                    (       
+                            LMJ1 < LMJ2 -> 
+                                    write("Se Acabo el Juego sin pila..... "),nl,write("j1"),
+                                    write(" A ganado el juego"),Valor = 1 ;
+                            LMJ1 > LMJ2 -> 
+                                    write("Se Acabo el Juego sin pila..... "),nl,write("j2"),
+                                    write(" A ganado el juego"), Valor = 1
+                    ); 
+                    Valor = 0
+            );
+            Valor = 0
+    ).
+
+
+% J1 = [[1,negro],[2,negro],[3,negro]]
+% J2 = [[1,negro],[12,verde],[10,azul],[7,rojo]]
+% mesa([])

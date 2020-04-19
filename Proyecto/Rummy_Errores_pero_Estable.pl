@@ -49,11 +49,11 @@ reparte :-
         sublista(Mazo,14,ListaJ1), agregaMazo(j1,ListaJ1),
         quitaCartas(ListaJ1,Mazo,SemiRepartida),
         write("----------MAZO JUGADOR-------------- "),write("j1 \n"),
-        otroImprime(ListaJ1),
+        recorreCarta(ListaJ1),
         sublista(SemiRepartida,14,ListaJ2), agregaMazo(j2,ListaJ2),
         quitaCartas(ListaJ2,SemiRepartida,Repartidas),
         write("----------MAZO JUGADOR-------------- "),write("j2 \n"),
-        otroImprime(ListaJ2),       %irrelabante solo con fines de mostrar
+        recorreCarta(ListaJ2),       %irrelabante solo con fines de mostrar
         write("\n"),                %irrebalante solo con fines de mostrar
         llenaMesa(Repartidas).
 
@@ -690,3 +690,27 @@ jugador 2 = 12
 1 1 1 1 - 3 3 3 - 3 3 3 
 
 */
+
+recorreCarta([]).
+recorreCarta([H|T]) :-
+    imprimeCarta2(H),
+    recorreCarta(T).
+
+imprimeCarta2([Num,Col]) :-
+        writeln("\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"),
+        writeln("\u2551          \u2551"),
+        (
+                Num < 10 -> write("\u2551     "),write(Num),writeln("    \u2551") ;
+                write("\u2551    "),write(Num),writeln("    \u2551")
+        ),
+        (
+                Col == rojo -> write("\u2551   "),write(Col),writeln("   \u2551");
+                Col == azul -> write("\u2551   "),write(Col),writeln("   \u2551");
+                Col == verde -> write("\u2551  "),write(Col),writeln("   \u2551");
+                Col == negro -> write("\u2551  "),write(Col),writeln("   \u2551");
+                write("\u2551 "),write(Col),writeln("  \u2551")
+        ),
+        /*writeln("|        |"),
+        writeln("|        |"),*/
+        writeln("\u2551          \u2551"),
+        writeln("\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D").
