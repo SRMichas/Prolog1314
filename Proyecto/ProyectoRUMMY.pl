@@ -38,27 +38,27 @@ empieza :-
     primeraJugada,nl,
     miniMenu.
 
-% Reparte Las cartar a los mazos de los jugadores    
+% Reparte Las cartar a los mazos de los jugadores
 reparte :-
         mesa(Mazo),
         sublista(Mazo,50,ListaJ1), agregaMazo(j1,ListaJ1),
         quitaCartas(ListaJ1,Mazo,SemiRepartida),
-        write("----------MAZO JUGADOR-------------- "),write("j1 \n"),
-        otroImprime(ListaJ1),
+        /*write("----------MAZO JUGADOR-------------- "),write("j1 \n"),
+        otroImprime(ListaJ1),*/
         sublista(SemiRepartida,52,ListaJ2), agregaMazo(j2,ListaJ2),
         quitaCartas(ListaJ2,SemiRepartida,Repartidas),
-        write("----------MAZO JUGADOR-------------- "),write("j2 \n"),
-        otroImprime(ListaJ2),       %irrelabante solo con fines de mostrar
+        /*write("----------MAZO JUGADOR-------------- "),write("j2 \n"),
+        otroImprime(ListaJ2),       %irrelabante solo con fines de mostrar*/
         write("\n"),                %irrebalante solo con fines de mostrar
         llenaMesa(Repartidas).
 
 % Se valida la primera jugada
 primeraJugada :- turno(J),mazoJugador(J,Mazo),
                  ponerFichas(1,Mazo),cambiarTurnoNormal.
-        
+
 % Cabezera de menu.
-imprimeCabezeraMiniMenu :- 
-                turno(J), 
+imprimeCabezeraMiniMenu :-
+                turno(J),
                 nl,write("Jugador en turno ~~~~ ["),write(J),write("] ~~~~"),nl,
                 mesa(Pila),length(Pila,L),
                 write("Restantes ====>> "),write(L),nl,nl,
@@ -71,20 +71,20 @@ imprimeCabezeraMiniMenu :-
                 write("Escaleras ====>"),imprimeBonito(0,_,_,Escaleras),nl,nl.
 
 % Imprime menu principal, {P} para pasar, {F} para insertar una ficha o jugada y valida el ganador
-miniMenu :-     
-                imprimeCabezeraMiniMenu,        
+miniMenu :-
+                imprimeCabezeraMiniMenu,
                 write("Que quieres hacer? {f} para poner fichas o {p} para pasar --> "),read(Opcion),
                 (
                         Opcion == f -> reiniciarPasan,juegoNormal;
-                        Opcion == p -> 
+                        Opcion == p ->
                                 mesa(MesaPila),
                                 length(MesaPila,L),
                                         (L =:= 0 ->
-                                        
+
                                         ambosPasan(V), A is V+1,modificarPasan(A),
                                         nl,validarGanador(G),nl,
                                         (G =:= 0 -> miniMenu ; !)
-                                        ; 
+                                        ;
                                         pasarConComer
                                         )
                                 ;
@@ -93,7 +93,7 @@ miniMenu :-
                 ).
 
 %  Inicia el juego normal despues de la primera Jugada, acompletar o crear nueva jugada
-juegoNormal:-   
+juegoNormal:-
                 turno(J),
                 mazoJugador(J,Mazo),
                 write("En donde quieres aplicar la Jugada {1} -> Tercias , {2} -> Ecaleras "),read(Opcion),
@@ -135,15 +135,15 @@ Se verifica que el elemento dado exista en la lista
 pertenece(E,[E|_]).
 pertenece(E,[_|T]):- pertenece(E,T).
 /*
-Se vefifica que las fichas que se mandaron existan en el mazo 
+Se vefifica que las fichas que se mandaron existan en el mazo
         checarFichasEnMazo(?Jugada,?MazoJugador).
 */
 checarFichasEnMazo([],_).
 checarFichasEnMazo([H|T],Mazo):-
                 pertenece(H,Mazo), %[1,negro] -->
                 checarFichasEnMazo(T,Mazo).
-        
-% 
+
+%
 validaJugada(Lista,_):- length(Lista,L),L>=3,jugar(0,Lista,Rsp,TipoJ),remueveFichasJugador(Lista),
                 write("Jugada Valida ---> "),write(Rsp),
                 write(" y fue una : "),write(TipoJ),nl,nl,
@@ -160,11 +160,11 @@ validaJugada(Jugada,TipoJugada) :-
         length(Jugada,L),L>0,L<3,write("Fichas ->"),write(Jugada),nl,nl,   % []  TERCIAS ==> [[[1,azul],[1,negro],[1,rojo]],[[1,negro],[1,verde],[1,rojo]]]
         (TipoJugada == tercias ->
                 (
-                        
+
                         (
                                 (L =:= 1) ->
                                         filtroNumeroAcompletarTercia(Numero,JugadasMesa,ListaFiltrada),
-                                        write("Lista FILTRADA ==>"),write(ListaFiltrada),nl,nl, 
+                                        write("Lista FILTRADA ==>"),write(ListaFiltrada),nl,nl,
                                         checarColores(FichaH,ListaFiltrada,JugadaDefinitiva,JugadaAbuscar),
                                         buscarReemplazar(TipoJugada,JugadaAbuscar,JugadaDefinitiva),
                                         write("Lista DEFINITIVA ==>"),print(JugadaDefinitiva),nl,nl,
@@ -181,48 +181,45 @@ validaJugada(Jugada,TipoJugada) :-
         TipoJugada == escaleras ->
                         filtroColor(Color,JugadasMesa,ListaFiltradaNum),
                         write(ListaFiltradaNum),nl,nl,
-                        sort(Jugada,JugadaOrd),
+                        sort(Jugada,JugadaOrd2),
                         write("Cortar {1}  o  Acompletar {2} ==> "),read(Opcion),
-                        (       Opcion =:=1 -> 
-                                
-                                        cortarEscaleras(JugadaOrd,ListaFiltradaNum,JugadaNueva,OtraJugada),
+                        (       Opcion =:=1 ->
+
+                                        cortarEscaleras(JugadaOrd2,ListaFiltradaNum,JugadaNueva,OtraJugada),
                                         write("Jugada 1 :: "),write(JugadaNueva),nl,nl,
                                         write("Jugada 2 :: "),write(OtraJugada),nl,nl;
                                 Opcion =:= 2 ->
-                                        checarNumeros(JugadaOrd,ListaFiltradaNum,JugadaDefinitivaA,JugadaAbuscar),
+                                        checarNumeros(JugadaOrd2,ListaFiltradaNum,JugadaDefinitivaA,JugadaAbuscar,TipoAcomp),
                                         hayComodin(JugadaDefinitivaA,Rsp),
                                         (
-                                                Rsp =:= 1-> 
-                                                /*nth1(1,JugadaDefinitivaA,Comodin),
-                                                nth1(2,JugadaDefinitivaA,[_,ColorBueno]),
-                                                escalera(0,JugadaDefinitivaA,JugadaDefinitivaA,[H|_]),
-                                                [Color,Numeros] = H,
-                                                procedimiento(Numeros,Resp),
-                                                convertir(Color,ColorBueno,Resp,JugadaDefinitiva),nl,
-                                                write("que pasara que misterio qabra"),nl,nl,
-                                                write(JugadaDefinitiva)*/
+                                                Rsp =:= 1->
                                                 sort(JugadaDefinitivaA,JugadaDefinitivaAOrd),
                                                 nth1(2,JugadaDefinitivaAOrd,[_,ColorBueno]),
                                                 sublistaNaM(JugadaDefinitivaAOrd,2,JugDefSinComd),
                                                 %sort(JugDefSinComd,JugDefSinComdOrd),
-                                                escalera(0,JugDefSinComd,JugDefSinComd,[H|_]),
-                                                [Color,Numeros] = H,
-                                                validaEscalera(1,Numeros,[],Rsp1,Rsp2),
-                                                append(Rsp1,[0],Aux),append(Aux,Rsp2,Aux2),
-                                                convertir(Color,ColorBueno,Aux2,JugadaDefinitiva)
+                                                escalera(0,JugDefSinComd,JugDefSinComd,[[Col,Num]|_]),
+                                                nl,write("JUego sin comodin ===> "),write([Col,Num]),nl,nl,
+                                                %[Color] = H,
+                                                validaEscalera(1,Num,[],Rsp1,Rsp2),
+                                                (
+                                                  TipoAcomp =:= 1 -> append([0],Rsp1,Aux2);
+                                                  TipoAcomp =:= 2 -> append(Rsp1,[0],Aux2);
+                                                  TipoAcomp =:= 3 -> append(Rsp1,[0],Aux),append(Aux,Rsp2,Aux2)
+                                                ),
+                                                convertir(Col,ColorBueno,Aux2,JugadaDefinitiva)
                                                 ;
                                                 JugadaDefinitiva = JugadaDefinitivaA
                                         ),
                                         buscarReemplazar(TipoJugada,JugadaAbuscar,JugadaDefinitiva),
                                         print(JugadaDefinitiva),nl,nl,
-                                        remueveFichasJugador(JugadaOrd)
-                                
+                                        remueveFichasJugador(JugadaOrd2)
+
                         )
         ).
 
 /*
- Si buscar y cortar arroja resultados positivos saca la longitud de las listas 
- der y izq y revisa si se puede cortar, se da a elegir si quieres 
+ Si buscar y cortar arroja resultados positivos saca la longitud de las listas
+ der y izq y revisa si se puede cortar, se da a elegir si quieres
  cortar hacia el lado izq o der
  recursivo
  cortarEscaleras(?ListaFichas,?MesaJugadasFiltrada,?ListaCortadaIzq,?ListaCortadaDer)
@@ -233,7 +230,7 @@ cortarEscaleras([H|T],[HJ|TJ],Resp1,Resp2) :-
         TipoJugada = escaleras,
         length([H|T],L),
         (
-                L=:= 1 -> 
+                L=:= 1 ->
                         buscarYcortar(H,HJ,R1,R2),
                         length(R1,L1),length(R2,L2),
                         (
@@ -241,7 +238,7 @@ cortarEscaleras([H|T],[HJ|TJ],Resp1,Resp2) :-
                                         write("Cortar a la Izquierda {1} o a la derecha {2} "),
                                         read(X),
                                         (
-                                                X =:= 1 -> 
+                                                X =:= 1 ->
                                                     append(R1,[H],Resp1),append([H],R2,Resp2),
                                                     mesaJugadas(TipoJugada,Escaleras),
                                                     remover(HJ,Escaleras,NuevaEscalera),
@@ -258,13 +255,13 @@ cortarEscaleras([H|T],[HJ|TJ],Resp1,Resp2) :-
                                                     agregarJugada(TipoJugada,Resp2)
                                         ) ;
                                 cortarEscaleras([H|T],TJ,Resp1,Resp2)
-                                
+
                         )
 
         ).
 /*
    recursivo
-   busca con la ficha si se encuentra en la lista de la jugada 
+   busca con la ficha si se encuentra en la lista de la jugada
    y te saca las listas izq y derecha de esa ficha.
 */
 buscarYcortar(_,[],[],[]).
@@ -281,7 +278,7 @@ buscarYcortar(Ficha,Lista,[H|T2],Rsp) :-
 % Recibe una lista con dos fichas y checa en la mesa de jugadas de tercias si hay alguna jugada con
 % cuatro fichas para cortar una ficha y acompletar la jugada mandada y agrega la jugada modificada
 % sin la ficha cortada
-% cortarTercia(?ListaCartas,?ListaJugadasTerciaFiltrada,?JugadaNueva) 
+% cortarTercia(?ListaCartas,?ListaJugadasTerciaFiltrada,?JugadaNueva)
 cortarTercia(_,[],[]).
 cortarTercia([CARTA1,CARTA2],[HM|TM],Resp):-
         length(HM,L),
@@ -329,27 +326,34 @@ Busca entre todas las jugadas de Escaleras para averiguar donde puede entrar la 
 que se mando ya sea al inicio o al final de la jugada buscando en Base al Numero
         checarNumeros(?ListaJugada,?JugadasDeEscalera,?JugadaBuena,?JugadaAQuitar)
 */
-checarNumeros([],_,_,_).
-checarNumeros([],[],_,_).
+checarNumeros([],_,_,_,_).
+checarNumeros([],[],_,_,_).
 /*checarNumeros([[6,verde],[10,verde]],[[[7,verde],[8,verde],[9,verde]]]*/
-checarNumeros([Ficha|Resto],[H|T],JugadaDefinitiva,JugadaAbuscar):-
+checarNumeros([Ficha|Resto],[H|T],JugadaDefinitiva,JugadaAbuscar,Bandera):-
                 %write(H),nl,nl,
-                verificaAcompletarEscalera(Ficha,H,Resp),
+                hayComodin(H,HayComodin),
                 (
-                    Resp =:= 1 -> 
-                    append([Ficha],H,LAux),
-                    sort(LAux,LOrdAux),
-                    checarNumeros(Resto,[LOrdAux],A,_),
-                    append([Ficha|Resto],H,Auxiliar),JugadaAbuscar = H,
-                    JugadaDefinitiva  = A,
-                    sort(Auxiliar,JugadaDefinitiva),
-                    write(JugadaDefinitiva),nl,nl
-                    ;
-                    checarNumeros([Ficha|Resto],T,_,JugadaAbuscar)
-                    
+                  HayComodin =:= 1, Ficha == [0,comodin] ->
+                        checarNumeros([Ficha|Resto],T,JugadaDefinitiva,JugadaAbuscar,Bandera)
+                  ;
+                        verificaAcompletarEscalera(Ficha,H,Resp,BanderaV),
+                            (
+                                Resp =:= 1 ->
+                                append([Ficha],H,LAux),
+                                sort(LAux,LOrdAux),
+                                checarNumeros(Resto,[LOrdAux],A,_,_),
+                                append([Ficha|Resto],H,Auxiliar),JugadaAbuscar = H,
+                                JugadaDefinitiva  = A,
+                                sort(Auxiliar,JugadaDefinitiva),
+                                Bandera = BanderaV
+                                %write(JugadaDefinitiva),nl,nl
+                                ;
+                                checarNumeros([Ficha|Resto],T,JugadaDefinitiva,JugadaAbuscar,Bandera)
+
+                            )
                 ).
 
-/* 
+/*
 Se asegura que la tercia puede acompletarse (max 4 elementos)
 Regresa 1 si no existe la ficha, 0 en caso de que exista
         verificaTerciaCompleta(?Ficha,?Jugada,?Bandera)
@@ -365,15 +369,20 @@ Se asegura que se puede acompletar una escalera por los extremos
 Regresa 1 si es posible agregar, 0 en caso de que no pueda
         verificaAcompletarEscalera(?Ficha,?Jugada,?Bandera)
 */
-verificaAcompletarEscalera(_,[],0).
-verificaAcompletarEscalera([N,Color],Lista,Resp) :-
-    [H|T] = Lista,
-    %write(Lista),nl,nl,
-    nth1(1,Lista,Primero),length(Lista,L),nth1(L,Lista,Ultimo),
-    [NPr,_] = Primero,[NUlt,_] = Ultimo,
-    (  N =:= NPr-1 -> Resp = 1 ;
-       N =:= NUlt+1 -> Resp = 1;    
-       verificaAcompletarEscalera([N,Color],T,Resp)
+verificaAcompletarEscalera(_,[],0,_).
+verificaAcompletarEscalera([N,Color],Lista,Resp,Bandera) :-
+    nth1(1,Lista,Primero),nth1(2,Lista,Segundo),length(Lista,L),AAA is L-1,
+    nth1(AAA,Lista,Penultimo),nth1(L,Lista,Ultimo),
+    [NPr,_] = Primero, [NSeg,_] = Segundo,
+    [NUlt,_] = Ultimo, [NPen,_] = Penultimo,
+    (
+       Color == comodin,not(NPr =:= 1) -> Resp = 1,Bandera = 1;
+       Color == comodin,not(NUlt =:= 13) -> Resp = 1,Bandera = 2;
+       NPr =:= 0,N =:= NSeg-2 -> Resp = 1,Bandera = 3;
+       NUlt =:= 0, N =:= NPen+2 -> Resp = 1,Bandera = 3;
+       N =:= NPr-1 -> Resp = 1 ,Bandera = 3;
+       N =:= NUlt+1 -> Resp = 1,Bandera = 3;
+       Resp = 0
     ).
 /*
 Busca una Jugada dada y reemplaza dicha jugada por otra que se proporciono
@@ -398,7 +407,7 @@ reemplaza(Jugada,[H|T],JugadaR,[HR|TR]) :-
    y revisa si la lista filtrada tiene almenos 3 fichas para poder acompletar con otra
    devuelve ejemplo: [1,[rojo,azul,verde]]
    filtroNumeroAcompletarTerciaa(?Numero,?ListaJugadaDeLaMesa,?ListaFiltradaPorNumero)
-   
+
 */
 % ===============================================FILTROS======================================
 filtroNumeroAcompletarTercia(_,[],[]).
@@ -441,7 +450,7 @@ filtroNumeroCortarTercia(Numero,[H|T],Resp) :-
 /*
    Se envia un color y se filtra la lista de fichas de la jugada por ese color
    devuelve ejemplo: [rojo,[1,2,3,4]]
-   filtroColor(?Color,?ListaJugadaDeLaMesa,?ListaFiltradaPorColor) 
+   filtroColor(?Color,?ListaJugadaDeLaMesa,?ListaFiltradaPorColor)
 */
 filtroColor(_,[],[]).
 filtroColor(Color,[H|T],[H|TR]) :-
@@ -478,7 +487,7 @@ ponerFichas(Bandera,Mazo) :-
         jugar(Bandera,Mazo,Jugada,TipoJugada) ->
                                 turno(J),
                                 remueveFichasJugador(Jugada),            % elimina las cartas de la jugada del mazo del jugador en turno
-                                agregarJugada(TipoJugada,Jugada),        
+                                agregarJugada(TipoJugada,Jugada),
                                 mazoJugador(J,Cartitas),
                                 modificaBandera1(true),
                                 write("==================================================================[ "),
@@ -518,7 +527,7 @@ jugar(Bandera,Mazo,Res,TipoJugada):-
                         convertir(N,_,Nombres,Res),nl,nl,
                         TipoJugada = tercias.
 
-jugar(Bandera,Mazo,Res,TipoJugada):- 
+jugar(Bandera,Mazo,Res,TipoJugada):-
                         sort(Mazo,MazoOrd),
                         nth1(2,MazoOrd,[_,ColorBueno]),
                         escalera(Bandera,MazoOrd,MazoOrd,[H|_]),
@@ -531,7 +540,7 @@ jugar(Bandera,Mazo,Res,TipoJugada):-
                         length(Resp,L), L >= 3,
                         convertir(Color,ColorBueno,Resp,Res),nl,nl,
                         TipoJugada = escaleras.
-                                        
+
 comerFicha:-
                 turno(Jugador),
                 mazoJugador(Jugador,MazoActual),
@@ -554,9 +563,9 @@ reescribeMesaPila(NuevaMesa):-
 % actualizaMesaJugadas(?TipoJugada,?NuevaMesaJugadas)
 actualizaMesaJugadas(TipoJugada,NuevaMesaJugadas):-
                 retractall(mesaJugadas(TipoJugada,_)),
-                assertz(mesaJugadas(TipoJugada,NuevaMesaJugadas)).   
+                assertz(mesaJugadas(TipoJugada,NuevaMesaJugadas)).
 
-      
+
 /*
 Quita las cartas de una lista de otro maso y responde con la lista de diferencia
         quitaCartas(?CartasAQuitar,?Mazo,?ListaDiferencia)
@@ -608,7 +617,7 @@ agregarJugada(TipoJugada,Jugada):- mesaJugadas(TipoJugada,TempJugada),
                                    retractall(mesaJugadas(TipoJugada,_)),
                                    assertz(mesaJugadas(TipoJugada,RespJugada)).
 
-% Agrega un nuevo mazo al mazo del jugador 
+% Agrega un nuevo mazo al mazo del jugador
 % Jugador => jugador en turno
 % agregarJugada(?JugadorEnTurno,?MazoNuevo)
 agregaMazo(Jugador,Cartas) :-
@@ -647,11 +656,11 @@ otroImprime([H|T]) :-
             writeln(H),
             otroImprime(T).
 
-sublista(_,0,[]).       
+sublista(_,0,[]).
 sublista([H|T],N,[H|RT]) :-     %
         N > 0,                  %
         Naux is N - 1,          %
-        sublista(T,Naux,RT).    
+        sublista(T,Naux,RT).
 
 imprime :-
        fichasXcolor(rojo,13,X),
@@ -671,7 +680,7 @@ unicos([X|Z], ACC, OUT) :- unicos(Z, [X|ACC], OUT).
         [1,[rojo,verde,azul]] ==> [[1,rojo],[1,verde],[1,azul]]
 */
 convertir(Numero,_,[],[]).
-convertir(Numero,_,[CH1|CT1],[RH2|RT2]):- 
+convertir(Numero,_,[CH1|CT1],[RH2|RT2]):-
                     number(Numero),
                     (
                         CH1 == comodin -> NumAux is 0 ;
@@ -699,13 +708,13 @@ revisaEmpieza([Carta1,Carta2|T]) :- /*IF Revisa Empieza*/
                   revisaEmpieza(T)
                 ).
 % ==============================================APARTADO TERCIAS==========================================
-mayor(Lista,Rsp) :- sort(0, @>, Lista, Rsp). %divideColor(rojo,[[3,rojo],[1,rojo],[2,rojo]],X).
+mayor(Lista,Rsp) :- sort(0, @>=, Lista, Rsp). %divideColor(rojo,[[3,rojo],[1,rojo],[2,rojo]],X).
 ordenaMayor(Lista,Respuesta) :- sort(0, @>, Lista, Respuesta).
 
 tercia(_,[],_,[]).
 tercia(Bandera,[H|T],Mazo,[HR|TR]):-                   % si hay tercia en el mazo
     (
-        Bandera =:= 0 -> Jugada = [H|T],     
+        Bandera =:= 0 -> Jugada = [H|T],
         sort(0,@>=,Jugada,Nueva),
         [HA|_] = Nueva;
         Bandera =:= 1 -> HA = H
@@ -717,14 +726,14 @@ tercia(Bandera,[H|T],Mazo,[HR|TR]):-                   % si hay tercia en el maz
 
 tercia(Bandera,[H|T],Mazo,TR):-                 % no hay tercia
     (
-        Bandera =:= 0 -> Jugada = [H|T],     
+        Bandera =:= 0 -> Jugada = [H|T],
         sort(0,@>=,Jugada,Nueva),
         [HA|_] = Nueva;
         Bandera =:= 1 -> HA = H
     ),
     dameCartasSinRepetir(Bandera,HA,Mazo,_,L),   % devuelve la "tercia"
     not(L=3),not(L=4),                  % longitud de que no sea 3 o 4
-    tercia(Bandera,T,Mazo,TR).                   
+    tercia(Bandera,T,Mazo,TR).
 
 dameCartasSinRepetir(Bandera,Carta,Mazo,Rsp,L) :-
         [N,_] = Carta,
@@ -733,17 +742,17 @@ dameCartasSinRepetir(Bandera,Carta,Mazo,Rsp,L) :-
         length(Unicos,L),                               % obtenemos la longitud de la lista
         Rsp = [N,Unicos].
 
-dameCartasRepetidas(_,_,[],[]).                           
+dameCartasRepetidas(_,_,[],[]).
 dameCartasRepetidas(Bandera,Carta,[Mazo1|Mazo2],[Col2|T]) :-    % verifica si hay cartas con el mismo nuemro
                 [Num,_] = Carta,
                 [Num1,Col2] = Mazo1,
                 (
-                  Bandera =:= 0 ->                                              
+                  Bandera =:= 0 ->
                         ( Num =:= Num1 -> dameCartasRepetidas(Bandera,Carta,Mazo2,T) %si son del mismo numero o es cero, guardamos la carta
-                                ;                    
+                                ;
                           Num1 =:= 0 -> dameCartasRepetidas(Bandera,Carta,Mazo2,T) )
                 ;
-                  Bandera =:= 1 -> 
+                  Bandera =:= 1 ->
                         Num =:= Num1 -> dameCartasRepetidas(Bandera,Carta,Mazo2,T)
                 ).
 
@@ -753,7 +762,7 @@ dameCartasRepetidas(Bandera,Carta,[Mazo1|Mazo2],T) :-           % verifica si ha
                 (
                   Bandera =:= 0 ->
                         ( not(Num =:= Num1) -> dameCartasRepetidas(Bandera,Carta,Mazo2,T) %si son del mismo numero o es cero, guardamos la carta
-                        ;                    
+                        ;
                           not(Num1 =:= 0) -> dameCartasRepetidas(Bandera,Carta,Mazo2,T) )
                 ;
                   Bandera =:= 1 ->
@@ -792,7 +801,7 @@ recorreListasEscaleras(Bandera,[_,J|T],Res,_):-
 dameCartasSinRepetirEsc(Bandera,Carta,Mazo,Rsp,L) :-
         [_,C] = Carta,
         dameCartasRepetidasEsc(Bandera,Carta,Mazo,Repetidas),   %devolver la lista aunqye haya repetidos
-        unicos(Repetidas,Unicos), 
+        unicos(Repetidas,Unicos),
         sort(Unicos, UnicosOrd),         %devuelve lista sin repetir
         length(UnicosOrd,L),
         L>=3,
@@ -803,7 +812,7 @@ dameCartasRepetidasEsc(Bandera,Carta,[Mazo1|Mazo2],[Num2|T]) :-
     [_,C] = Carta,
     [Num2,Col2] = Mazo1,
     (
-      Bandera =:= 0 -> 
+      Bandera =:= 0 ->
         (
         C == Col2 -> dameCartasRepetidasEsc(Bandera,Carta,Mazo2,T)
         ;
@@ -827,7 +836,7 @@ dameCartasRepetidasEsc(Bandera,Carta,[Mazo1|Mazo2],T) :-
 /*Valida si los elementos de una lista son numeros consecutivos
 */
 validaEscalera(_,[X],ListaA,ListaRsp,_):- append(ListaA,[X],ListaRsp).
-validaEscalera(Bandera,[Actual,SigN|T],ListaA,Rsp,Rsp2) :- 
+validaEscalera(Bandera,[Actual,SigN|T],ListaA,Rsp,Rsp2) :-
     Actual =:= SigN-1,
     append(ListaA,[Actual],ListaAU),
     append([SigN],T,Lista),
@@ -863,16 +872,16 @@ imprimeBonito(Bandera,Limite,Contador,[H|T]) :-
         imprimeBonito(Bandera,_,_,T).
 imprimeMazoBonito(Mazo) :-
         nl,write("Rojo -> "),
-        divideColor(rojo,Mazo,SinOrdenarRoj),sort(SinOrdenarRoj,OrdRojo),
+        divideColor(rojo,Mazo,SinOrdenarRoj),sort(0,@=<,SinOrdenarRoj,OrdRojo),
         imprimeBonito(0,_,_,OrdRojo),nl,nl,
         write("Azul -> "),
-        divideColor(azul,Mazo,SinOrdenarAzu),sort(SinOrdenarAzu,OrdAZul),
+        divideColor(azul,Mazo,SinOrdenarAzu),sort(0,@=<,SinOrdenarAzu,OrdAZul),
         imprimeBonito(0,_,_,OrdAZul),nl,nl,
         write("Verde -> "),
-        divideColor(verde,Mazo,SinOrdenarVer),sort(SinOrdenarVer,OrdVerde),
+        divideColor(verde,Mazo,SinOrdenarVer),sort(0,@=<,SinOrdenarVer,OrdVerde),
         imprimeBonito(0,_,_,OrdVerde),nl,nl,
         write("Negro -> "),
-        divideColor(negro,Mazo,SinOrdenarNeg),sort(SinOrdenarNeg,OrdNegro),
+        divideColor(negro,Mazo,SinOrdenarNeg),sort(0,@=<,SinOrdenarNeg,OrdNegro),
         imprimeBonito(0,_,_,OrdNegro),nl,nl,
         write("Comodin -> "),
         divideColor(comodin,Mazo,Comodines),imprimeBonito(0,_,_,Comodines),nl.
@@ -889,25 +898,25 @@ validarGanador(Valor) :-
     length(Mazo,LMazo),
     length(PilaCartas,LPila),
     (
-            LMazo =:= 0 -> 
+            LMazo =:= 0 ->
                     write("Se Acabo el Juego Sin cartas..... "),nl,
                     write(J), write(" A ganado el juego"),
                     Valor = 1       ;
             LPila =:= 0 ->
             (
-                    V1 =:= 2 -> 
+                    V1 =:= 2 ->
                             mazoJugador(j1,MazoJ1),
                             mazoJugador(j2,MazoJ2),
                             length(MazoJ1,LMJ1),
                             length(MazoJ2,LMJ2),
-                    (       
-                            LMJ1 < LMJ2 -> 
+                    (
+                            LMJ1 < LMJ2 ->
                                     write("Se Acabo el Juego sin pila..... "),nl,write("j1"),
                                     write(" A ganado el juego"),Valor = 1 ;
-                            LMJ1 > LMJ2 -> 
+                            LMJ1 > LMJ2 ->
                                     write("Se Acabo el Juego sin pila..... "),nl,write("j2"),
                                     write(" A ganado el juego"), Valor = 1
-                    ); 
+                    );
                     Valor = 0
             );
             Valor = 0
@@ -924,7 +933,7 @@ procedimiento(Jugada,RespChida):-
                 validaEscalera(1,Resp,[],Resp2,Resp3),
                 %nth1(2,Jugada,Segundo),
                 (
-                    Resp == Resp2 -> 
+                    Resp == Resp2 ->
                         length(Resp,L),
                         nth1(1,Resp,RPri),
                         nth1(L,Resp,RUlt),
@@ -961,8 +970,8 @@ procedimiento(Jugada,RespChida):-
                 /*26 ?- procedimiento([0,1,2,3,4,6],R).l
             R = [1, 2, 3, 4, 6, 0, 6] ;
             */
-                    %[2,3,4,0] -> [1,2,3,0,5]    
-        ;  
+                    %[2,3,4,0] -> [1,2,3,0,5]
+        ;
         recorreListasEscaleras(0,Jugada,RespChida,_)
         ).
 
@@ -975,7 +984,7 @@ sublistaNaM(Lista,N,[RH|RT]) :-
 
 
 hayComodin([],0).
-hayComodin([Ficha|RestoFichas],Rsp):-
+hayComodin([Ficha|_],Rsp):-
         Ficha = [0,comodin],
         Rsp = 1.
 
