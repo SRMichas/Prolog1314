@@ -96,7 +96,7 @@ miniMenu :-
 juegoNormal:-
                 turno(J),
                 mazoJugador(J,Mazo),
-                write("En donde quieres aplicar la Jugada {1} -> Tercias , {2} -> Ecaleras "),read(Opcion),
+                write("En donde quieres aplicar la Jugada {1} -> Tercias , {2} -> Escaleras "),read(Opcion),
                 (
                         Opcion =:= 1 -> TipoJugada=tercias;
                         Opcion =:=2 -> TipoJugada = escaleras ;
@@ -184,7 +184,6 @@ validaJugada(Jugada,TipoJugada) :-
                         sort(Jugada,JugadaOrd2),
                         write("Cortar {1}  o  Acompletar {2} ==> "),read(Opcion),
                         (       Opcion =:=1 ->
-
                                         cortarEscaleras(JugadaOrd2,ListaFiltradaNum,JugadaNueva,OtraJugada),
                                         write("Jugada 1 :: "),write(JugadaNueva),nl,nl,
                                         write("Jugada 2 :: "),write(OtraJugada),nl,nl;
@@ -231,7 +230,14 @@ cortarEscaleras([H|T],[HJ|TJ],Resp1,Resp2) :-
         length([H|T],L),
         (
                 L=:= 1 ->
-                        buscarYcortar(H,HJ,R1,R2),
+                  (
+                     H == [0,comodin] ->
+                        write("Con que carta quieres cortar -> "),read(Cartilla),
+                        Comodin = 1
+                     ;
+                     Cartilla = H,Comodin = 0
+                  ),
+                        buscarYcortar(Cartilla,HJ,R1,R2),
                         length(R1,L1),length(R2,L2),
                         (
                                 L1 >= 2 , L2 >= 2 ->
@@ -239,7 +245,12 @@ cortarEscaleras([H|T],[HJ|TJ],Resp1,Resp2) :-
                                         read(X),
                                         (
                                                 X =:= 1 ->
-                                                    append(R1,[H],Resp1),append([H],R2,Resp2),
+                                                    (
+                                                      Comodin =:= 1 -> 
+                                                      append(R1,Cartilla,Resp1),append([0,comodin],R2,Resp2)
+                                                      ;
+                                                      append(R1,[H],Resp1),append([H],R2,Resp2)
+                                                    ),
                                                     mesaJugadas(TipoJugada,Escaleras),
                                                     remover(HJ,Escaleras,NuevaEscalera),
                                                     write(NuevaEscalera),nl,nl,
@@ -247,8 +258,14 @@ cortarEscaleras([H|T],[HJ|TJ],Resp1,Resp2) :-
                                                     agregarJugada(TipoJugada,Resp1),
                                                     agregarJugada(TipoJugada,Resp2)
                                                 ;
-                                                X =:= 2 -> append(R1,[H],Resp1),append([H],R2,Resp2),
-                                                mesaJugadas(TipoJugada,Escaleras),
+                                                X =:= 2 ->
+                                                    (
+                                                      Comodin =:= 1 ->
+                                                      append(R1,[0,comodin],Resp1),append(Cartilla,R2,Resp2)
+                                                      ;
+                                                      append(R1,[H],Resp1),append([H],R2,Resp2)
+                                                    ),
+                                                    mesaJugadas(TipoJugada,Escaleras),
                                                     remover(HJ,Escaleras,NuevaEscalera),
                                                     actualizaMesaJugadas(TipoJugada,NuevaEscalera),
                                                     agregarJugada(TipoJugada,Resp1),
