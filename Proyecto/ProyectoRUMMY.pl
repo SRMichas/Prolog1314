@@ -43,12 +43,8 @@ reparte :-
         mesa(Mazo),
         sublista(Mazo,50,ListaJ1), agregaMazo(j1,ListaJ1),
         quitaCartas(ListaJ1,Mazo,SemiRepartida),
-        /*write("----------MAZO JUGADOR-------------- "),write("j1 \n"),
-        otroImprime(ListaJ1),*/
         sublista(SemiRepartida,52,ListaJ2), agregaMazo(j2,ListaJ2),
         quitaCartas(ListaJ2,SemiRepartida,Repartidas),
-        /*write("----------MAZO JUGADOR-------------- "),write("j2 \n"),
-        otroImprime(ListaJ2),       %irrelabante solo con fines de mostrar*/
         write("\n"),                %irrebalante solo con fines de mostrar
         llenaMesa(Repartidas).
 
@@ -82,7 +78,7 @@ miniMenu :-
                                         (L =:= 0 ->
 
                                         ambosPasan(V), A is V+1,modificarPasan(A),
-                                        nl,validarGanador(G),nl,
+                                        nl,validarGanador(G),cambiarTurnoNormal,nl,
                                         (G =:= 0 -> miniMenu ; !)
                                         ;
                                         pasarConComer
@@ -227,6 +223,7 @@ cortarEscaleras([],_,_,_).
 cortarEscaleras([],[],_,_).
 cortarEscaleras([H|T],[HJ|TJ],Resp1,Resp2) :-
         TipoJugada = escaleras,
+        length(HJ,LJ),
         length([H|T],L),
         (
                 L=:= 1 ->
@@ -237,7 +234,9 @@ cortarEscaleras([H|T],[HJ|TJ],Resp1,Resp2) :-
                      ;
                      Cartilla = H,Comodin = 0
                   ),
-                        buscarYcortar(Cartilla,HJ,R1,R2),
+                  (
+                    LJ >= 5 ->
+                    buscarYcortar(Cartilla,HJ,R1,R2),
                         length(R1,L1),length(R2,L2),
                         (
                                 L1 >= 2 , L2 >= 2 ->
@@ -274,7 +273,9 @@ cortarEscaleras([H|T],[HJ|TJ],Resp1,Resp2) :-
                                 cortarEscaleras([H|T],TJ,Resp1,Resp2)
 
                         )
-
+                    ;
+                    cortarEscaleras([H|T],TJ,Resp1,Resp2)
+                  )
         ).
 /*
    recursivo
@@ -975,8 +976,7 @@ procedimiento(Jugada,RespChida):-
                          LR3 =:= 1->
                          [NR3|_] = Resp3,
                             (
-                                (RUlt+2)=:= NR3 -> append(Aux,Izq,RespChida),
-                                write('Entro Aqi')
+                                (RUlt+2)=:= NR3 -> append(Aux,Izq,RespChida)
                             )
                         )
 
@@ -984,10 +984,7 @@ procedimiento(Jugada,RespChida):-
                       RespChida = "tas bien meco"
                     )
                 )
-                /*26 ?- procedimiento([0,1,2,3,4,6],R).l
-            R = [1, 2, 3, 4, 6, 0, 6] ;
-            */
-                    %[2,3,4,0] -> [1,2,3,0,5]
+             
         ;
         recorreListasEscaleras(0,Jugada,RespChida,_)
         ).
@@ -1009,4 +1006,4 @@ hayComodin([Ficha|RestoFichas],Rsp):-
         not(Ficha = [0,comodin]),
         hayComodin(RestoFichas,Rsp).
 
-% escalera(0,[[0, comodin],[1, azul], [3, azul], [4, azul]],[[0, comodin],[1, azul], [3, azul], [4, azul]],R)
+
